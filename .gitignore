@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+*.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Testing
+coverage/
+
+# Backend
+/backend/uploads/
+/backend/tmp/
+
+# Mobile - React Native
+/mobile/ios/Pods/
+/mobile/ios/build/
+/mobile/android/app/build/
+/mobile/android/build/
+/mobile/android/.gradle/
+/mobile/android/local.properties
+/mobile/android/app/src/main/assets/
+*.keystore
+!debug.keystore
+*.jks
+*.hprof
+
+# Metro bundler
+/mobile/.metro-health-check*
+
+# Ruby (CocoaPods)
+/mobile/ios/vendor/
+/mobile/vendor/
+
+# Prisma
+/backend/prisma/migrations/**/migration_lock.toml
+
+# Secrets
+*.pem
+*.key
+*.cert
+secrets/
