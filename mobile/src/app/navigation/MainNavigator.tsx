@@ -5,6 +5,7 @@ import { View, Text } from 'react-native';
 import ProfileStack from './ProfileStack';
 import RemindersStack from './RemindersStack';
 import VaultStack from './VaultStack';
+import MedicinesStack from './MedicinesStack';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -18,9 +19,7 @@ export default function MainNavigator() {
   return (
     <Tab.Navigator>
       <Tab.Screen name="HomeTab" component={RemindersStack} options={{ title: 'Reminders', headerShown: false }} />
-      <Tab.Screen name="HealthTab" options={{ title: 'Health', headerShown: false }}>
-        {() => <PlaceholderScreen name="Health" />}
-      </Tab.Screen>
+      <Tab.Screen name="HealthTab" component={MedicinesStack} options={{ title: 'Health', headerShown: false }} />
       <Tab.Screen name="VaultTab" component={VaultStack} options={{ title: 'Vault', headerShown: false }} />
       <Tab.Screen name="ManageTab" options={{ title: 'Manage', headerShown: false }}>
         {() => <PlaceholderScreen name="Manage" />}

@@ -32,6 +32,14 @@ export type VaultStackParamList = {
   EditDocument: { id: string };
 };
 
+export type MedicinesStackParamList = {
+  TodayDoses: undefined;
+  MedicineList: undefined;
+  MedicineDetail: { id: string };
+  CreateMedicine: undefined;
+  EditMedicine: { id: string };
+};
+
 export type MainTabParamList = {
   HomeTab: undefined;
   HealthTab: undefined;

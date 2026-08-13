@@ -21,6 +21,7 @@ import { ProfileModule } from './modules/profile/profile.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { DocumentsModule } from './modules/documents/documents.module';
+import { MedicinesModule } from './modules/medicines/medicines.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { DocumentsModule } from './modules/documents/documents.module';
     NotificationsModule,
     RemindersModule,
     DocumentsModule,
+    MedicinesModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
