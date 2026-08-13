@@ -6,13 +6,15 @@ import { DoctorListScreen, DoctorDetailScreen, CreateDoctorScreen, EditDoctorScr
 import { AppointmentListScreen, AppointmentDetailScreen, CreateAppointmentScreen, EditAppointmentScreen } from '../../features/appointments/screens/AppointmentScreens';
 import { PrescriptionListScreen, PrescriptionDetailScreen, CreatePrescriptionScreen } from '../../features/prescriptions/screens/PrescriptionScreens';
 import { MedicalReportListScreen, MedicalReportDetailScreen, CreateMedicalReportScreen } from '../../features/medical-reports/screens/MedicalReportScreens';
+import { WarrantyListScreen, WarrantyDetailScreen, CreateWarrantyScreen, EditWarrantyScreen } from '../../features/warranties/screens/WarrantyScreens';
+import { VehicleListScreen, VehicleDetailScreen, CreateVehicleScreen, EditVehicleScreen } from '../../features/vehicles/screens/VehicleScreens';
 
 const Stack = createNativeStackNavigator<ManageStackParamList>();
 
 export default function ManageStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="ManageHome" component={ManageHomeScreen} options={{ title: 'Health Records' }} />
+      <Stack.Screen name="ManageHome" component={ManageHomeScreen} options={{ title: 'Manage' }} />
       <Stack.Screen name="DoctorList" component={DoctorListScreen} options={{ title: 'Doctors' }} />
       <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: 'Doctor' }} />
       <Stack.Screen name="CreateDoctor" component={CreateDoctorScreen} options={{ title: 'Add Doctor' }} />
@@ -27,6 +29,14 @@ export default function ManageStack() {
       <Stack.Screen name="MedicalReportList" component={MedicalReportListScreen} options={{ title: 'Medical Reports' }} />
       <Stack.Screen name="MedicalReportDetail" component={MedicalReportDetailScreen} options={{ title: 'Report' }} />
       <Stack.Screen name="CreateMedicalReport" component={CreateMedicalReportScreen} options={{ title: 'Add Report' }} />
+      <Stack.Screen name="WarrantyList" component={WarrantyListScreen} options={{ title: 'Warranties' }} />
+      <Stack.Screen name="WarrantyDetail" component={WarrantyDetailScreen} options={{ title: 'Warranty' }} />
+      <Stack.Screen name="CreateWarranty" component={CreateWarrantyScreen} options={{ title: 'Add Warranty' }} />
+      <Stack.Screen name="EditWarranty" component={EditWarrantyScreen} options={{ title: 'Edit Warranty' }} />
+      <Stack.Screen name="VehicleList" component={VehicleListScreen} options={{ title: 'Vehicles' }} />
+      <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} options={{ title: 'Vehicle' }} />
+      <Stack.Screen name="CreateVehicle" component={CreateVehicleScreen} options={{ title: 'Add Vehicle' }} />
+      <Stack.Screen name="EditVehicle" component={EditVehicleScreen} options={{ title: 'Edit Vehicle' }} />
     </Stack.Navigator>
   );
 }

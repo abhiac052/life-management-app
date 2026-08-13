@@ -56,6 +56,14 @@ export type ManageStackParamList = {
   MedicalReportList: undefined;
   MedicalReportDetail: { id: string };
   CreateMedicalReport: undefined;
+  WarrantyList: undefined;
+  WarrantyDetail: { id: string };
+  CreateWarranty: undefined;
+  EditWarranty: { id: string };
+  VehicleList: undefined;
+  VehicleDetail: { id: string };
+  CreateVehicle: undefined;
+  EditVehicle: { id: string };
 };
 
 export type MainTabParamList = {

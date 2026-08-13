@@ -6,6 +6,8 @@ import { useDoctors } from '../../doctors/hooks/useDoctors';
 import { useAppointments } from '../../appointments/hooks/useAppointments';
 import { usePrescriptions } from '../../prescriptions/hooks/usePrescriptions';
 import { useMedicalReports } from '../../medical-reports/hooks/useMedicalReports';
+import { useWarranties } from '../../warranties/hooks/useWarranties';
+import { useVehicles } from '../../vehicles/hooks/useVehicles';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -17,17 +19,21 @@ export function ManageHomeScreen() {
   const { data: appointments } = useAppointments('UPCOMING');
   const { data: prescriptions } = usePrescriptions();
   const { data: reports } = useMedicalReports();
+  const { data: warranties } = useWarranties();
+  const { data: vehicles } = useVehicles();
 
   const sections = [
-    { title: 'Doctors', icon: '👨‍⚕️', count: doctors?.length ?? 0, screen: 'DoctorList' as const, color: '#3B82F6' },
+    { title: 'Doctors', icon: '👨⚕️', count: doctors?.length ?? 0, screen: 'DoctorList' as const, color: '#3B82F6' },
     { title: 'Appointments', icon: '📅', count: appointments?.length ?? 0, screen: 'AppointmentList' as const, color: '#8B5CF6' },
     { title: 'Prescriptions', icon: '📋', count: prescriptions?.length ?? 0, screen: 'PrescriptionList' as const, color: '#10B981' },
     { title: 'Medical Reports', icon: '🔬', count: reports?.length ?? 0, screen: 'MedicalReportList' as const, color: '#F59E0B' },
+    { title: 'Warranties', icon: '🛡️', count: warranties?.length ?? 0, screen: 'WarrantyList' as const, color: '#EF4444' },
+    { title: 'Vehicles', icon: '🚗', count: vehicles?.length ?? 0, screen: 'VehicleList' as const, color: '#6366F1' },
   ];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>Health Records</Text>
+      <Text style={styles.heading}>Manage</Text>
       <View style={styles.grid}>
         {sections.map((s) => (
           <TouchableOpacity
