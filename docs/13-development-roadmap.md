@@ -274,6 +274,12 @@ Each module should be **independently functional** before moving to the next.
 | Sprint 10 | Week 13 | Deployment |
 | **Total** | **~13 weeks** | **Full Phase 1** |
 
+> **Important:** 13 weeks is a best-case estimate assuming full-time, uninterrupted development.
+> Real-world progress will vary. The quality gates at the end of each sprint are non-negotiable —
+> do not skip testing, error handling, security checks, or notification reliability work to
+> recover time. If a sprint runs long, extend it. The timeline serves the product; the product
+> does not serve the timeline.
+
 ---
 
 ## 4. Development Principles

@@ -350,6 +350,7 @@ File uploads use `multipart/form-data`.
   "title": "Renew Passport",
   "description": "Indian passport expires March 2027",
   "category": "documents",
+  "startDate": "2026-08-12T00:00:00Z",  // required; use current date if creating immediately
   "dueDate": "2027-03-01T09:00:00Z",
   "recurrenceType": "ONCE",
   "notifyBefore": [1440, 60]  // 1 day + 1 hour before (in minutes)
@@ -386,13 +387,22 @@ File uploads use `multipart/form-data`.
   "success": true,
   "data": {
     "id": "uuid",
-    "status": "SNOOZED",
+    "status": "ACTIVE",
     "snoozedUntil": "2026-08-12T11:00:00Z"
   }
 }
+// Note: status remains ACTIVE — snooze is not a lifecycle state.
+// snoozedUntil indicates when the reminder will re-fire.
 ```
 
 #### GET /reminders?status=ACTIVE&page=1&limit=20
+
+Valid `status` filter values: `ACTIVE` | `PAUSED` | `CANCELLED` | `EXPIRED`
+
+- `ACTIVE` — reminder is live and will fire on `dueDate`
+- `PAUSED` — user has temporarily suspended the reminder
+- `CANCELLED` — reminder has been permanently stopped
+- `EXPIRED` — one-time reminder was completed, or recurring reminder passed its `endDate`
 
 ```json
 // Response 200
@@ -774,8 +784,22 @@ Fields:
     "time": "10:30",
     "purpose": "Blood pressure follow-up",
     "status": "UPCOMING",
+    "prescriptionId": null,
     "createdAt": "2026-08-12T12:00:00Z"
   }
+}
+```
+
+#### PATCH /appointments/:id
+
+Updates appointment fields. Also used to attach a prescription after the visit.
+
+```json
+// Request (all fields optional — send only what is changing)
+{
+  "purpose": "Updated purpose",
+  "notes": "Bring previous reports",
+  "prescriptionId": "uuid"  // attach prescription created after the appointment
 }
 ```
 
@@ -900,6 +924,28 @@ Query params: `status` (active/expiring/expired), `page`, `limit`, `sortBy` (exp
 | GET | /profile/preferences | ✅ | Get preferences |
 | PUT | /profile/preferences | ✅ | Update preferences |
 | DELETE | /profile/account | ✅ | Delete account |
+
+#### PUT /profile/preferences
+
+```json
+// Request (all fields optional — send only what is changing)
+{
+  "timezone": "Asia/Kolkata",
+  "notificationsEnabled": true,
+  "medicinePush": true,
+  "appointmentPush": true,
+  "reminderPush": true,
+  "warrantyPush": true,
+  "vehiclePush": true,
+  "documentPush": true,
+  "quietHoursEnabled": false,
+  "quietHoursStart": "22:00",
+  "quietHoursEnd": "07:00",
+  "theme": "system",
+  "timeFormat": "12h",
+  "defaultReminderTime": "09:00"
+}
+```
 
 #### PATCH /profile
 

@@ -156,7 +156,7 @@ When a recurring reminder is completed/skipped:
 ```
 1. Take current dueDate
 2. Based on recurrenceType + recurrenceRule, calculate next occurrence
-3. If next occurrence > endDate → mark reminder as COMPLETED (permanently)
+3. If next occurrence > endDate → mark reminder as EXPIRED (permanently)
 4. Otherwise → update dueDate to next occurrence, set status back to ACTIVE
 ```
 
@@ -177,9 +177,10 @@ export class ReminderSchedulerService {
   async processReminders() {
     const now = new Date();
     
-    // Find reminders due for FCM notification
-    // (Only server-triggered types: expiry warnings, stock alerts)
+    // Only process ACTIVE reminders that are not currently snoozed
     const dueReminders = await this.findDueForServerNotification(now);
+    // Query: status = ACTIVE AND dueDate <= now
+    //        AND (snoozedUntil IS NULL OR snoozedUntil <= now)
     
     for (const reminder of dueReminders) {
       await this.sendNotification(reminder);
@@ -325,13 +326,27 @@ async deleteWarranty(userId: string, warrantyId: string) {
 
 ## 8. Reminder Actions
 
+### Lifecycle vs. Occurrence
+
+The `Reminder` row represents the **recurring rule** (lifecycle). Individual firings are **occurrences**. These are tracked separately:
+
+| Concern | Where tracked |
+|---------|---------------|
+| Is the reminder still active? | `Reminder.status` — `ACTIVE \| PAUSED \| CANCELLED \| EXPIRED` |
+| Was this occurrence acted on? | `ReminderAction` row + `Reminder.snoozedUntil` |
+
+A recurring reminder is **never** set to `EXPIRED` just because one occurrence was completed. It only becomes `EXPIRED` when the `endDate` is passed or the last one-time occurrence is completed.
+
 ### Complete
 
 ```
 User marks reminder as complete
     → Create ReminderAction { action: "completed" }
-    → If ONCE: set status = COMPLETED
-    → If recurring: calculate next occurrence, update dueDate
+    → If ONCE: set status = EXPIRED
+    → If recurring:
+        → Calculate next occurrence
+        → If next occurrence > endDate: set status = EXPIRED
+        → Otherwise: update dueDate to next occurrence, status stays ACTIVE
     → Cancel/reschedule local notification
 ```
 
@@ -340,8 +355,8 @@ User marks reminder as complete
 ```
 User skips a reminder occurrence
     → Create ReminderAction { action: "skipped" }
-    → If ONCE: set status = COMPLETED (treated as dismissed)
-    → If recurring: calculate next occurrence, update dueDate
+    → If ONCE: set status = EXPIRED (treated as dismissed)
+    → If recurring: calculate next occurrence, update dueDate; status stays ACTIVE
     → Cancel current notification
 ```
 
@@ -350,11 +365,26 @@ User skips a reminder occurrence
 ```
 User snoozes for X minutes
     → Create ReminderAction { action: "snoozed", snoozedTo: now + X }
-    → Set status = SNOOZED, snoozedUntil = now + X
+    → Set snoozedUntil = now + X  (status remains ACTIVE — no status change)
     → Schedule new local notification for snoozedUntil
-    → When snoozed notification fires:
-        → User takes action (complete/skip/snooze again)
-        → If no action: status reverts to ACTIVE at next check
+    → Cron query skips this reminder while snoozedUntil > now
+    → When snoozed notification fires: user takes action (complete/skip/snooze again)
+    → On action: clear snoozedUntil
+```
+
+### Pause / Cancel
+
+```
+User pauses a recurring reminder
+    → Set status = PAUSED
+    → Cancel scheduled local notifications
+    → Cron skips PAUSED reminders
+    → User can resume → status = ACTIVE
+
+User cancels a reminder
+    → Set status = CANCELLED
+    → Cancel scheduled local notifications
+    → Reminder moves to archived/cancelled list
 ```
 
 ---
@@ -382,8 +412,9 @@ This query is optimized with indexes on `(userId, dueDate, status)`.
 |------|----------|
 | User creates reminder in the past | Reject — dueDate must be in future (for one-time); for recurring, start from next valid occurrence |
 | Recurring reminder with no end date | Runs indefinitely until user cancels or archives |
-| All occurrences completed (end date reached) | Status → COMPLETED permanently |
-| Device timezone changes | Local notifications use device time; server stores UTC; next app open reconciles |
+| All occurrences completed (end date reached) | Status → EXPIRED permanently |
+| Device timezone changes | Local notifications use device time; server stores UTC; next app open reconciles. Medicine schedules follow `UserPreference.timezone`, not device timezone. |
+| User changes configured timezone | Backend recalculates `dueDate` for ACTIVE reminders; mobile reschedules local notifications on next app open |
 | Multiple devices | Local notifications scheduled independently per device; server is source of truth for state |
 | App not opened for days | Local notifications still fire (scheduled up to 7 days ahead); on next open, missed items shown as overdue |
 | Notification permission denied | App works without notifications; reminders still visible in-app; prompt user to enable |

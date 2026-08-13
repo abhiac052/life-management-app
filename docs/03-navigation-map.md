@@ -104,7 +104,8 @@ HealthStack
 ├── Doctors
 │   ├── DoctorList              — All doctors
 │   ├── DoctorDetail            — Doctor info + appointment history
-│   └── CreateDoctor            — Add new doctor
+│   ├── CreateDoctor            — Add new doctor
+│   └── EditDoctor              — Modify existing doctor
 │
 ├── Appointments
 │   ├── AppointmentList         — All appointments (upcoming/past)

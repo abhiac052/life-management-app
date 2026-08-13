@@ -330,6 +330,7 @@ const handleDeepLink = (url: string) => {
 | 18 | Parameterized queries (Prisma) | ✅ |
 | 19 | Account deletion cascades all data | ✅ |
 | 20 | Logging excludes sensitive fields | ✅ |
+| 21 | Refresh tokens stored as SHA-256 hash in DB (plaintext never persisted server-side) | ✅ |
 
 ---
 

@@ -108,7 +108,7 @@ Every time a refresh token is used, it's invalidated and a new one is issued. Th
 }
 ```
 
-The `jti` (JWT ID) corresponds to the `RefreshToken.id` in the database, allowing individual token revocation.
+The `jti` (JWT ID) is a unique identifier embedded in the token. The backend does **not** look up tokens by `jti` directly — it hashes the incoming raw token (SHA-256) and looks up by `tokenHash`. The `jti` is retained for potential future use (e.g. family-based revocation across token generations).
 
 ---
 
@@ -124,8 +124,10 @@ The `jti` (JWT ID) corresponds to the `RefreshToken.id` in the database, allowin
 5. Create User (linked to household)
 6. Create UserPreference (defaults)
 7. Generate access token
-8. Generate refresh token + store in DB
-9. Return { user, accessToken, refreshToken }
+8. Generate refresh token string
+9. Compute SHA-256 hash of refresh token
+10. Store RefreshToken row with tokenHash (plaintext never persisted)
+11. Return { user, accessToken, refreshToken } — raw token to client, hash stays server-side
 ```
 
 ### 5.2 Login Flow
@@ -137,29 +139,36 @@ The `jti` (JWT ID) corresponds to the `RefreshToken.id` in the database, allowin
 4. Compare password hash (bcrypt)
 5. If mismatch → 401 "Invalid email or password"
 6. Generate access token
-7. Generate refresh token + store in DB
-8. Return { user, accessToken, refreshToken }
+7. Generate refresh token string
+8. Compute SHA-256 hash of refresh token
+9. Store RefreshToken row with tokenHash (plaintext never persisted)
+10. Return { user, accessToken, refreshToken } — raw token to client, hash stays server-side
 ```
 
 ### 5.3 Token Refresh Flow
 
 ```
-1. Receive refresh token
+1. Receive refresh token (raw JWT string from client)
 2. Verify JWT signature and expiry
-3. Look up token in DB by jti
-4. If not found or revoked → 401
-5. Revoke current refresh token (set revokedAt)
-6. Generate new access token
-7. Generate new refresh token + store in DB
-8. Return { accessToken, refreshToken }
+3. Compute SHA-256 hash of the incoming token
+4. Look up RefreshToken row in DB by tokenHash
+5. If not found or revokedAt is set → 401
+6. Revoke current row (set revokedAt = now)
+7. Generate new access token
+8. Generate new refresh token string
+9. Compute SHA-256 hash of new refresh token
+10. Store new RefreshToken row with tokenHash
+11. Return { accessToken, refreshToken } — raw token to client, hash stays server-side
 ```
 
 ### 5.4 Logout Flow
 
 ```
-1. Receive refresh token
-2. Find and revoke token in DB
-3. Return success
+1. Receive refresh token (raw string from client)
+2. Compute SHA-256 hash of the incoming token
+3. Find RefreshToken row in DB by tokenHash
+4. If found and not already revoked: set revokedAt = now
+5. Return success (always 200 — do not reveal whether token existed)
 ```
 
 ### 5.5 Forgot Password Flow
@@ -170,9 +179,17 @@ The `jti` (JWT ID) corresponds to the `RefreshToken.id` in the database, allowin
 3. If not found → still return 200 (no enumeration)
 4. Generate password reset token (random 64 bytes, hex)
 5. Store hashed reset token in DB with 1-hour expiry
-6. Send email with reset link: {FRONTEND_URL}/reset-password?token={token}
+6. Send email with reset link using a Universal Link (iOS) / App Link (Android):
+   https://{APP_DOMAIN}/reset-password?token={token}
+   The OS intercepts this HTTPS URL and routes it to the app.
+   Falls back to a web page with instructions if the app is not installed.
 7. Return 200 "If this email is registered..."
 ```
+
+> **Deep link approach:** Use HTTPS Universal Links (iOS) and App Links (Android) rather
+> than a custom URL scheme (e.g. `app-name://`). Custom schemes can be hijacked by other
+> apps; Universal/App Links are verified against a server-hosted manifest
+> (`apple-app-site-association` / `assetlinks.json`) and cannot be spoofed.
 
 ### 5.6 Reset Password Flow
 
@@ -310,10 +327,11 @@ All auth endpoints that accept an email respond identically whether or not the e
 
 ### 8.3 Refresh Token Security
 
-- Stored in DB → can be individually revoked
+- Stored in DB as **SHA-256 hash** — the plaintext token is never persisted server-side
+- Client holds the raw token in secure storage (Keychain / EncryptedSharedPreferences)
+- On refresh: server hashes the incoming token and looks up by hash
 - Rotated on every use → single-use tokens
 - Family-based revocation → if reuse detected, revoke all tokens for user
-- Hashed in DB (optional extra security — token stored as hash, validated by hashing incoming token)
 
 ### 8.4 Transport Security
 

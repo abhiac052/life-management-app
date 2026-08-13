@@ -456,7 +456,7 @@ Day before (FCM push): "Appointment with Dr. Sharma tomorrow at 10:30 AM"
 After appointment:
     → User opens AppointmentDetail
     → Taps "Mark Complete"
-    → API: PATCH /appointments/:id { status: "completed" }
+    → API: PATCH /appointments/:id/complete
     → Optional: "Add prescription from this visit?" prompt
     │
     ├── Yes → Opens CreatePrescription (pre-filled with doctor)

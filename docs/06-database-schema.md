@@ -46,13 +46,11 @@
 
 ┌──────────────┐       ┌───────────────────┐       ┌──────────────┐
 │    Doctor    │───1:N──│   Appointment     │───0:1──│ Prescription │
-└──────────────┘       └───────────────────┘       └──────┬───────┘
-                                                          │
-                                                     0:N  │
-                                                          ▼
-                                                   ┌──────────────┐
-                                                   │MedicalReport │
-                                                   └──────────────┘
+└──────────────┘       └───────────────────┘       └──────────────┘
+
+┌──────────────┐
+│MedicalReport │  (independent — no relation to Prescription in Phase 1)
+└──────────────┘
 
 ┌──────────────┐       ┌──────────────┐
 │   Warranty   │       │   Vehicle    │
@@ -173,17 +171,17 @@ model User {
 }
 
 model RefreshToken {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  revokedAt DateTime?
+  id         String   @id @default(uuid())
+  userId     String
+  tokenHash  String   @unique // SHA-256 hash of the actual token; plaintext never stored
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
+  @@index([tokenHash])
   @@map("refresh_tokens")
 }
 
@@ -214,11 +212,15 @@ model HealthProfile {
 // ============================================================
 
 enum ReminderStatus {
-  ACTIVE
-  COMPLETED
-  SNOOZED
-  CANCELLED
+  ACTIVE     // Reminder is live and will fire on dueDate
+  PAUSED     // User has temporarily suspended the reminder
+  CANCELLED  // Reminder has been permanently stopped
+  EXPIRED    // Recurring reminder passed its endDate; one-time reminder was completed
 }
+
+// NOTE: Snooze is NOT a lifecycle status. It is represented by snoozedUntil != null
+// on the Reminder row. The cron query filters: status = ACTIVE AND
+// (snoozedUntil IS NULL OR snoozedUntil <= now).
 
 enum RecurrenceType {
   ONCE
@@ -256,9 +258,10 @@ model Reminder {
   notifyBefore    Int[]            @default([0]) // Minutes before due (0 = at due time)
   
   // Status
+  // Lifecycle: ACTIVE | PAUSED | CANCELLED | EXPIRED
+  // Snooze state is NOT a status — use snoozedUntil field instead.
   status          ReminderStatus   @default(ACTIVE)
-  completedAt     DateTime?
-  snoozedUntil    DateTime?
+  snoozedUntil    DateTime?        // Non-null = currently snoozed; cleared when snooze fires or is cancelled
   
   // Linked entity (polymorphic)
   linkedEntityType LinkedEntityType @default(NONE)
@@ -462,8 +465,9 @@ model Prescription {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  medicines Medicine[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicines    Medicine[]
+  appointments Appointment[] // 0 or 1 in practice; Prisma requires array on the non-FK side
 
   @@index([userId])
   @@map("prescriptions")
@@ -553,8 +557,9 @@ model Appointment {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  doctor Doctor? @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor       Doctor?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
   @@index([userId, date])
@@ -670,7 +675,24 @@ model Notification {
 model UserPreference {
   id     String @id @default(uuid())
   userId String @unique
-  
+
+  // Timezone
+  // IANA timezone string (e.g. "Asia/Kolkata", "America/New_York").
+  // Used by the backend to interpret wall-clock schedule times (medicine doses,
+  // quiet hours, reminder due times) and by the mobile app when scheduling
+  // local notifications. All DateTime values in the database are stored in UTC;
+  // this field is the key for converting between UTC and the user's local time.
+  //
+  // Travel behaviour: medicine schedules and reminders follow the user's
+  // CONFIGURED timezone, not the device's current timezone. A user who travels
+  // from Kolkata to New York still takes their 8:00 AM medicine at 8:00 AM IST
+  // unless they explicitly update this preference.
+  //
+  // Timezone change: when the user updates this field, the backend recalculates
+  // dueDate for all ACTIVE reminders and the mobile app reschedules local
+  // notifications on the next app open.
+  timezone             String  @default("Asia/Kolkata")
+
   // Notification preferences
   notificationsEnabled Boolean @default(true)
   medicinePush         Boolean @default(true)
@@ -702,6 +724,22 @@ model UserPreference {
 ---
 
 ## 4. Design Decisions
+
+### 4.0 Timezone Strategy
+
+All `DateTime` columns in PostgreSQL are stored in **UTC**. The `UserPreference.timezone` field (IANA string) is the single source of truth for converting between UTC and the user's local wall-clock time.
+
+| Concern | Behaviour |
+|---------|----------|
+| Medicine schedule times (`"08:00"`) | Interpreted in `UserPreference.timezone`; converted to UTC for cron queries and local notification scheduling |
+| `Reminder.dueDate` | Stored as UTC; displayed in `UserPreference.timezone` |
+| `Appointment.date` + `Appointment.time` | Combined into a UTC timestamp using `UserPreference.timezone` when the backend creates appointment reminder `dueDate` values (e.g. "2026-08-20" + "10:30" in "Asia/Kolkata" → UTC equivalent stored on the Reminder row) |
+| `quietHoursStart` / `quietHoursEnd` | Wall-clock times in `UserPreference.timezone` |
+| User travels (device timezone changes) | Schedules follow configured timezone, not device timezone. No automatic adjustment. |
+| User changes configured timezone | Backend recalculates `dueDate` for ACTIVE reminders; mobile reschedules local notifications on next app open |
+| Backend cron jobs | Run in UTC; convert user timezone when evaluating per-user schedules |
+
+---
 
 ### 4.1 UUID Primary Keys
 
@@ -787,7 +825,7 @@ Used sparingly for flexible structured data:
 | warranties | userId + expiryDate | Expiry queries |
 | notifications | userId + isRead | Unread count |
 | notifications | userId + createdAt | History feed |
-| refresh_tokens | token | Token validation |
+| refresh_tokens | tokenHash | Token validation (lookup by SHA-256 hash) |
 
 ---
 

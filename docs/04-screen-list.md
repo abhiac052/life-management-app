@@ -12,11 +12,11 @@
 |-------|-------------|
 | Auth | 5 |
 | Home | 5 |
-| Health | 17 |
+| Health | 21 |
 | Vault | 5 |
 | Manage | 13 |
-| Profile | 7 |
-| **Total** | **52** |
+| Profile | 8 |
+| **Total** | **~57** |
 
 ---
 
@@ -64,7 +64,7 @@
 |---|---|
 | **Purpose** | Set new password via deep link token |
 | **Key Elements** | New password field, confirm password field, "Reset Password" button |
-| **Entry** | Deep link from email (app-name://reset-password?token=xxx) |
+| **Entry** | Universal Link / App Link from email (`https://{APP_DOMAIN}/reset-password?token=xxx`). The OS routes this HTTPS URL directly to the app (iOS Universal Links / Android App Links). Falls back to a web page if the app is not installed. |
 | **Success** | Redirect to Login with success message |
 | **Error** | "Link expired or invalid" |
 
@@ -248,14 +248,22 @@
 | **Purpose** | Add a new doctor |
 | **Key Elements** | Name, specialization picker, hospital/clinic, phone, address, notes |
 
-### HE17. AppointmentList
+### HE17. EditDoctor
+
+| | |
+|---|---|
+| **Purpose** | Modify existing doctor record |
+| **Key Elements** | Same form as CreateDoctor, pre-populated |
+| **Entry** | Edit action from DoctorDetail |
+
+### HE18. AppointmentList
 
 | | |
 |---|---|
 | **Purpose** | All appointments |
 | **Key Elements** | Upcoming/Past tabs, cards with doctor, date, time, purpose, status badge |
 
-### HE18. AppointmentDetail
+### HE19. AppointmentDetail
 
 | | |
 |---|---|
@@ -263,14 +271,14 @@
 | **Key Elements** | Doctor, date, time, purpose, notes, reminder info, status, linked prescription |
 | **Actions** | Edit, Cancel, Mark Complete, Add Prescription |
 
-### HE19. CreateAppointment (Modal)
+### HE20. CreateAppointment (Modal)
 
 | | |
 |---|---|
 | **Purpose** | Schedule a new appointment |
 | **Key Elements** | Doctor picker (or free text), date, time, purpose, notes, reminder settings (default: 1 day + 1 hour before) |
 
-### HE20. HealthProfileEdit
+### HE21. HealthProfileEdit
 
 | | |
 |---|---|
@@ -495,7 +503,7 @@
 |-------|---------|
 | Auth | A1–A5 = 5 |
 | Home | H1–H5 = 5 |
-| Health | HE1–HE20 = 20 |
+| Health | HE1–HE21 = 21 |
 | Vault | V1–V5 = 5 |
 | Manage | M1–M13 = 13 (M3, M4 shared with Home) |
 | Profile | P1–P8 = 8 |
