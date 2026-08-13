@@ -10,6 +10,7 @@ import {
   useUpdateAppointment, useDeleteAppointment,
 } from '../hooks/useAppointments';
 import { EmptyState, LoadingSkeleton } from '../../../shared/components/Card';
+import { DatePickerField } from '../../../shared/components/DatePickerField';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -164,17 +165,12 @@ function AppointmentForm({ doctorName, setDoctorName, date, setDate, time, setTi
 }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {[
-        { label: 'Doctor Name *', value: doctorName, onChange: setDoctorName, placeholder: 'Dr. Name' },
-        { label: 'Date * (YYYY-MM-DD)', value: date, onChange: setDate, placeholder: '2025-01-15' },
-        { label: 'Time * (HH:MM)', value: time, onChange: setTime, placeholder: '10:30' },
-        { label: 'Purpose', value: purpose, onChange: setPurpose, placeholder: 'e.g. Follow-up' },
-      ].map((f) => (
-        <View key={f.label}>
-          <Text style={styles.label}>{f.label}</Text>
-          <TextInput style={styles.input} value={f.value} onChangeText={f.onChange} placeholder={f.placeholder} />
-        </View>
-      ))}
+      <Text style={styles.label}>Doctor Name *</Text>
+      <TextInput style={styles.input} value={doctorName} onChangeText={setDoctorName} placeholder="Dr. Name" />
+      <DatePickerField label="Date *" value={date} onChange={setDate} minimumDate={new Date()} />
+      <DatePickerField label="Time *" value={time} onChange={setTime} mode="time" />
+      <Text style={styles.label}>Purpose</Text>
+      <TextInput style={styles.input} value={purpose} onChangeText={setPurpose} placeholder="e.g. Follow-up" />
       <Text style={styles.label}>Notes</Text>
       <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Additional notes..." />
       <TouchableOpacity style={[styles.submitBtn, isPending && styles.submitBtnDisabled]} onPress={onSubmit} disabled={isPending}>

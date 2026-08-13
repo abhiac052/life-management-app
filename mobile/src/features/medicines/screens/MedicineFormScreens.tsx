@@ -9,6 +9,7 @@ import { useCreateMedicine, useUpdateMedicine, useMedicineDetail } from '../hook
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { MedicinesStackParamList } from '../../../app/navigation/types';
 import type { CreateMedicinePayload } from '../services/medicines.service';
+import { DatePickerField } from '../../../shared/components/DatePickerField';
 
 type Nav = NativeStackNavigationProp<MedicinesStackParamList>;
 
@@ -180,11 +181,8 @@ function MedicineForm({
         ))}
       </View>
 
-      <Text style={styles.label}>Start Date</Text>
-      <TextInput style={styles.input} value={f.startDate} onChangeText={f.setStartDate} placeholder="YYYY-MM-DD" />
-
-      <Text style={styles.label}>End Date (optional)</Text>
-      <TextInput style={styles.input} value={f.endDate} onChangeText={f.setEndDate} placeholder="YYYY-MM-DD" />
+      <DatePickerField label="Start Date" value={f.startDate} onChange={f.setStartDate} />
+      <DatePickerField label="End Date (optional)" value={f.endDate} onChange={f.setEndDate} />
 
       <Text style={styles.label}>Instructions</Text>
       <TextInput style={[styles.input, styles.multiline]} value={f.instructions} onChangeText={f.setInstructions} multiline placeholder="Special instructions..." />

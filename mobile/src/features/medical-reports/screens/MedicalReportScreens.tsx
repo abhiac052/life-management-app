@@ -8,6 +8,8 @@ import type { RouteProp } from '@react-navigation/native';
 import { useMedicalReports, useCreateMedicalReport, useDeleteMedicalReport } from '../hooks/useMedicalReports';
 import { medicalReportsService } from '../services/medical-reports.service';
 import { EmptyState, LoadingSkeleton } from '../../../shared/components/Card';
+import { DatePickerField } from '../../../shared/components/DatePickerField';
+import { FilePicker, PickedFile } from '../../../shared/components/FilePicker';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -104,12 +106,13 @@ export function CreateMedicalReportScreen() {
   const [date, setDate] = useState('');
   const [doctorLab, setDoctorLab] = useState('');
   const [notes, setNotes] = useState('');
+  const [file, setFile] = useState<PickedFile | null>(null);
 
   const handleSubmit = () => {
     if (!title.trim() || !date) { Alert.alert('Required', 'Title, type and date are required'); return; }
-    Alert.alert('Note', 'File upload requires device file picker integration. Record saved without file for now.');
-    // In production: use react-native-document-picker to select file
-    navigation.goBack();
+    if (!file) { Alert.alert('Required', 'Please select a file to upload'); return; }
+    create({ title: title.trim(), type, date, doctorLab: doctorLab || undefined, notes: notes || undefined, file },
+      { onSuccess: () => navigation.goBack() });
   };
 
   return (
@@ -126,8 +129,7 @@ export function CreateMedicalReportScreen() {
         ))}
       </View>
 
-      <Text style={styles.label}>Date * (YYYY-MM-DD)</Text>
-      <TextInput style={styles.input} value={date} onChangeText={setDate} placeholder="2025-01-15" />
+      <DatePickerField label="Date *" value={date} onChange={setDate} />
 
       <Text style={styles.label}>Doctor / Lab</Text>
       <TextInput style={styles.input} value={doctorLab} onChangeText={setDoctorLab} placeholder="Lab or doctor name" />
@@ -135,8 +137,10 @@ export function CreateMedicalReportScreen() {
       <Text style={styles.label}>Notes</Text>
       <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Notes..." />
 
+      <FilePicker label="Report File *" file={file} onChange={setFile} />
+
       <TouchableOpacity style={[styles.submitBtn, isPending && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={isPending}>
-        <Text style={styles.submitBtnText}>{isPending ? 'Saving...' : 'Add Report'}</Text>
+        <Text style={styles.submitBtnText}>{isPending ? 'Uploading...' : 'Add Report'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

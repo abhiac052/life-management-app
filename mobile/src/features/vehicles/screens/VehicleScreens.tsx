@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { useVehicles, useVehicleDetail, useCreateVehicle, useUpdateVehicle, useDeleteVehicle } from '../hooks/useVehicles';
 import { EmptyState, LoadingSkeleton } from '../../../shared/components/Card';
+import { DatePickerField } from '../../../shared/components/DatePickerField';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -203,15 +204,15 @@ function VehicleForm({ fields, set, onSubmit, isPending, submitLabel }: {
 
       {[
         { key: 'registrationNo', label: 'Registration No', placeholder: 'MH01AB1234' },
-        { key: 'insuranceExpiry', label: 'Insurance Expiry (YYYY-MM-DD)', placeholder: '2026-03-15' },
-        { key: 'pucExpiry', label: 'PUC Expiry (YYYY-MM-DD)', placeholder: '2025-09-15' },
-        { key: 'nextServiceDate', label: 'Next Service Date (YYYY-MM-DD)', placeholder: '2025-06-01' },
       ].map((f) => (
         <View key={f.key}>
           <Text style={styles.label}>{f.label}</Text>
           <TextInput style={styles.input} value={fields[f.key as keyof VehicleFields]} onChangeText={set(f.key as keyof VehicleFields)} placeholder={f.placeholder} />
         </View>
       ))}
+      <DatePickerField label="Insurance Expiry" value={fields.insuranceExpiry} onChange={set('insuranceExpiry')} />
+      <DatePickerField label="PUC Expiry" value={fields.pucExpiry} onChange={set('pucExpiry')} />
+      <DatePickerField label="Next Service Date" value={fields.nextServiceDate} onChange={set('nextServiceDate')} />
 
       <Text style={styles.label}>Notes</Text>
       <TextInput style={[styles.input, styles.multiline]} value={fields.notes} onChangeText={set('notes')} multiline placeholder="Notes..." />

@@ -8,6 +8,7 @@ import type { RouteProp } from '@react-navigation/native';
 import { useWarranties, useWarrantyDetail, useCreateWarranty, useUpdateWarranty, useDeleteWarranty } from '../hooks/useWarranties';
 import { warrantiesService } from '../services/warranties.service';
 import { EmptyState, LoadingSkeleton } from '../../../shared/components/Card';
+import { DatePickerField } from '../../../shared/components/DatePickerField';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -175,8 +176,6 @@ function WarrantyForm({ fields, set, onSubmit, isPending, submitLabel }: {
     { key: 'productName', label: 'Product Name *', placeholder: 'e.g. Samsung TV' },
     { key: 'brand', label: 'Brand', placeholder: 'Samsung' },
     { key: 'model', label: 'Model', placeholder: 'QN55Q80C' },
-    { key: 'purchaseDate', label: 'Purchase Date * (YYYY-MM-DD)', placeholder: '2024-01-15' },
-    { key: 'expiryDate', label: 'Warranty Expiry * (YYYY-MM-DD)', placeholder: '2026-01-15' },
     { key: 'seller', label: 'Seller', placeholder: 'Amazon / Store name' },
   ];
 
@@ -188,6 +187,8 @@ function WarrantyForm({ fields, set, onSubmit, isPending, submitLabel }: {
           <TextInput style={styles.input} value={fields[f.key as keyof WarrantyFields]} onChangeText={set(f.key as keyof WarrantyFields)} placeholder={f.placeholder} />
         </View>
       ))}
+      <DatePickerField label="Purchase Date *" value={fields.purchaseDate} onChange={set('purchaseDate')} />
+      <DatePickerField label="Warranty Expiry *" value={fields.expiryDate} onChange={set('expiryDate')} />
       <Text style={styles.label}>Notes</Text>
       <TextInput style={[styles.input, styles.multiline]} value={fields.notes} onChangeText={set('notes')} multiline placeholder="Notes..." />
       <TouchableOpacity style={[styles.submitBtn, isPending && styles.submitBtnDisabled]} onPress={onSubmit} disabled={isPending}>

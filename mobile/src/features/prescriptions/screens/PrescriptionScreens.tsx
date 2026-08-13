@@ -8,6 +8,8 @@ import type { RouteProp } from '@react-navigation/native';
 import { usePrescriptions, usePrescriptionDetail, useCreatePrescription, useDeletePrescription } from '../../prescriptions/hooks/usePrescriptions';
 import { prescriptionsService } from '../../prescriptions/services/prescriptions.service';
 import { EmptyState, LoadingSkeleton } from '../../../shared/components/Card';
+import { DatePickerField } from '../../../shared/components/DatePickerField';
+import { FilePicker, PickedFile } from '../../../shared/components/FilePicker';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -109,27 +111,24 @@ export function CreatePrescriptionScreen() {
   const [clinicName, setClinicName] = useState('');
   const [date, setDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [file, setFile] = useState<PickedFile | null>(null);
 
   const handleSubmit = () => {
     if (!doctorName.trim() || !date) { Alert.alert('Required', 'Doctor name and date are required'); return; }
-    create({ doctorName: doctorName.trim(), clinicName: clinicName || undefined, date, notes: notes || undefined },
+    create({ doctorName: doctorName.trim(), clinicName: clinicName || undefined, date, notes: notes || undefined, file: file ?? undefined },
       { onSuccess: () => navigation.goBack() });
   };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {[
-        { label: 'Doctor Name *', value: doctorName, onChange: setDoctorName, placeholder: 'Dr. Name' },
-        { label: 'Clinic / Hospital', value: clinicName, onChange: setClinicName, placeholder: 'Clinic name' },
-        { label: 'Date * (YYYY-MM-DD)', value: date, onChange: setDate, placeholder: '2025-01-15' },
-      ].map((f) => (
-        <View key={f.label}>
-          <Text style={styles.label}>{f.label}</Text>
-          <TextInput style={styles.input} value={f.value} onChangeText={f.onChange} placeholder={f.placeholder} />
-        </View>
-      ))}
+      <Text style={styles.label}>Doctor Name *</Text>
+      <TextInput style={styles.input} value={doctorName} onChangeText={setDoctorName} placeholder="Dr. Name" />
+      <Text style={styles.label}>Clinic / Hospital</Text>
+      <TextInput style={styles.input} value={clinicName} onChangeText={setClinicName} placeholder="Clinic name" />
+      <DatePickerField label="Date *" value={date} onChange={setDate} />
       <Text style={styles.label}>Notes</Text>
       <TextInput style={[styles.input, styles.multiline]} value={notes} onChangeText={setNotes} multiline placeholder="Notes..." />
+      <FilePicker label="Prescription File (optional)" file={file} onChange={setFile} />
       <TouchableOpacity style={[styles.submitBtn, isPending && styles.submitBtnDisabled]} onPress={handleSubmit} disabled={isPending}>
         <Text style={styles.submitBtnText}>{isPending ? 'Saving...' : 'Add Prescription'}</Text>
       </TouchableOpacity>
