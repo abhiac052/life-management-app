@@ -7,6 +7,7 @@ import RemindersStack from './RemindersStack';
 import VaultStack from './VaultStack';
 import MedicinesStack from './MedicinesStack';
 import ManageStack from './ManageStack';
+import HomeStack from './HomeStack';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -19,7 +20,7 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 export default function MainNavigator() {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="HomeTab" component={RemindersStack} options={{ title: 'Reminders', headerShown: false }} />
+      <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: 'Home', headerShown: false }} />
       <Tab.Screen name="HealthTab" component={MedicinesStack} options={{ title: 'Health', headerShown: false }} />
       <Tab.Screen name="VaultTab" component={VaultStack} options={{ title: 'Vault', headerShown: false }} />
       <Tab.Screen name="ManageTab" component={ManageStack} options={{ title: 'Records', headerShown: false }} />

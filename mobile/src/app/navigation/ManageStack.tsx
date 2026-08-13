@@ -8,6 +8,9 @@ import { PrescriptionListScreen, PrescriptionDetailScreen, CreatePrescriptionScr
 import { MedicalReportListScreen, MedicalReportDetailScreen, CreateMedicalReportScreen } from '../../features/medical-reports/screens/MedicalReportScreens';
 import { WarrantyListScreen, WarrantyDetailScreen, CreateWarrantyScreen, EditWarrantyScreen } from '../../features/warranties/screens/WarrantyScreens';
 import { VehicleListScreen, VehicleDetailScreen, CreateVehicleScreen, EditVehicleScreen } from '../../features/vehicles/screens/VehicleScreens';
+import { ReminderListScreen } from '../../features/reminders/screens/ReminderListScreen';
+import { ReminderDetailScreen } from '../../features/reminders/screens/ReminderDetailScreen';
+import { CreateReminderScreen, EditReminderScreen } from '../../features/reminders/screens/ReminderFormScreens';
 
 const Stack = createNativeStackNavigator<ManageStackParamList>();
 
@@ -15,6 +18,10 @@ export default function ManageStack() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="ManageHome" component={ManageHomeScreen} options={{ title: 'Manage' }} />
+      <Stack.Screen name="ReminderList" component={ReminderListScreen} options={{ title: 'Reminders' }} />
+      <Stack.Screen name="ReminderDetail" component={ReminderDetailScreen} options={{ title: 'Reminder' }} />
+      <Stack.Screen name="CreateReminder" component={CreateReminderScreen} options={{ title: 'New Reminder' }} />
+      <Stack.Screen name="EditReminder" component={EditReminderScreen} options={{ title: 'Edit Reminder' }} />
       <Stack.Screen name="DoctorList" component={DoctorListScreen} options={{ title: 'Doctors' }} />
       <Stack.Screen name="DoctorDetail" component={DoctorDetailScreen} options={{ title: 'Doctor' }} />
       <Stack.Screen name="CreateDoctor" component={CreateDoctorScreen} options={{ title: 'Add Doctor' }} />

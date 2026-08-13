@@ -42,6 +42,10 @@ export type MedicinesStackParamList = {
 
 export type ManageStackParamList = {
   ManageHome: undefined;
+  ReminderList: undefined;
+  ReminderDetail: { id: string };
+  CreateReminder: undefined;
+  EditReminder: { id: string };
   DoctorList: undefined;
   DoctorDetail: { id: string };
   CreateDoctor: undefined;

@@ -8,6 +8,7 @@ import { usePrescriptions } from '../../prescriptions/hooks/usePrescriptions';
 import { useMedicalReports } from '../../medical-reports/hooks/useMedicalReports';
 import { useWarranties } from '../../warranties/hooks/useWarranties';
 import { useVehicles } from '../../vehicles/hooks/useVehicles';
+import { useReminders } from '../../reminders/hooks/useReminders';
 import { colors, spacing, typography, radius } from '../../../shared/theme';
 import type { ManageStackParamList } from '../../../app/navigation/types';
 
@@ -21,8 +22,10 @@ export function ManageHomeScreen() {
   const { data: reports } = useMedicalReports();
   const { data: warranties } = useWarranties();
   const { data: vehicles } = useVehicles();
+  const { data: remindersData } = useReminders('ACTIVE');
 
   const sections = [
+    { title: 'Reminders', icon: '🔔', count: remindersData?.data?.length ?? 0, screen: 'ReminderList' as const, color: '#4F46E5' },
     { title: 'Doctors', icon: '👨⚕️', count: doctors?.length ?? 0, screen: 'DoctorList' as const, color: '#3B82F6' },
     { title: 'Appointments', icon: '📅', count: appointments?.length ?? 0, screen: 'AppointmentList' as const, color: '#8B5CF6' },
     { title: 'Prescriptions', icon: '📋', count: prescriptions?.length ?? 0, screen: 'PrescriptionList' as const, color: '#10B981' },

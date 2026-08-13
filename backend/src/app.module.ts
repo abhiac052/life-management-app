@@ -28,6 +28,7 @@ import { PrescriptionsModule } from './modules/prescriptions/prescriptions.modul
 import { MedicalReportsModule } from './modules/medical-reports/medical-reports.module';
 import { WarrantiesModule } from './modules/warranties/warranties.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
     MedicalReportsModule,
     WarrantiesModule,
     VehiclesModule,
+    DashboardModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
