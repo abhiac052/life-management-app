@@ -1,8 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from './types';
-import { Text, View } from 'react-native';
+import { View, Text } from 'react-native';
 import ProfileStack from './ProfileStack';
+import RemindersStack from './RemindersStack';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -15,9 +16,7 @@ const PlaceholderScreen = ({ name }: { name: string }) => (
 export default function MainNavigator() {
   return (
     <Tab.Navigator>
-      <Tab.Screen name="HomeTab" options={{ title: 'Home', headerShown: false }}>
-        {() => <PlaceholderScreen name="Dashboard" />}
-      </Tab.Screen>
+      <Tab.Screen name="HomeTab" component={RemindersStack} options={{ title: 'Reminders', headerShown: false }} />
       <Tab.Screen name="HealthTab" options={{ title: 'Health', headerShown: false }}>
         {() => <PlaceholderScreen name="Health" />}
       </Tab.Screen>

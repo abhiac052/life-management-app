@@ -18,6 +18,13 @@ export type ProfileStackParamList = {
   DeleteAccount: undefined;
 };
 
+export type RemindersStackParamList = {
+  ReminderList: undefined;
+  ReminderDetail: { id: string };
+  CreateReminder: undefined;
+  EditReminder: { id: string };
+};
+
 export type MainTabParamList = {
   HomeTab: undefined;
   HealthTab: undefined;
