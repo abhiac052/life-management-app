@@ -25,6 +25,13 @@ export type RemindersStackParamList = {
   EditReminder: { id: string };
 };
 
+export type VaultStackParamList = {
+  VaultHome: undefined;
+  DocumentDetail: { id: string };
+  CreateDocument: undefined;
+  EditDocument: { id: string };
+};
+
 export type MainTabParamList = {
   HomeTab: undefined;
   HealthTab: undefined;

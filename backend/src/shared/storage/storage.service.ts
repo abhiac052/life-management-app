@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import { randomUUID } from 'crypto';
 
 export interface StorageResult {
   path: string;
@@ -33,16 +32,13 @@ export class LocalStorageService extends StorageService {
     fs.mkdirSync(this.basePath, { recursive: true });
   }
 
-  async upload(buffer: Buffer, folder: string, metadata: FileMetadata): Promise<StorageResult> {
-    const ext = path.extname(metadata.originalName);
-    const fileName = `${randomUUID()}${ext}`;
-    const dir = path.join(this.basePath, folder);
-    fs.mkdirSync(dir, { recursive: true });
-    const fullPath = path.join(dir, fileName);
+  async upload(buffer: Buffer, filePath: string, metadata: FileMetadata): Promise<StorageResult> {
+    const fullPath = path.join(this.basePath, filePath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
     fs.writeFileSync(fullPath, buffer);
     return {
-      path: `${folder}/${fileName}`,
-      url: `/uploads/${folder}/${fileName}`,
+      path: filePath,
+      url: `/uploads/${filePath}`,
       size: metadata.size,
       mimeType: metadata.mimeType,
     };
