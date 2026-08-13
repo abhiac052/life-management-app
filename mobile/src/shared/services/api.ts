@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 import {
   clearAllSecureStorage,
@@ -8,7 +9,11 @@ import {
 } from './secure-storage';
 import { useAuthStore } from '../../features/auth/store/auth.store';
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+// Android emulator → 10.0.2.2 reaches host machine
+// iOS simulator / physical device → localhost or your machine IP
+const API_BASE_URL = Platform.OS === 'android'
+  ? 'http://10.0.2.2:3000/api/v1'
+  : 'http://localhost:3000/api/v1';
 
 export const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
