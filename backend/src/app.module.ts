@@ -22,6 +22,10 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { RemindersModule } from './modules/reminders/reminders.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { MedicinesModule } from './modules/medicines/medicines.module';
+import { DoctorsModule } from './modules/doctors/doctors.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { PrescriptionsModule } from './modules/prescriptions/prescriptions.module';
+import { MedicalReportsModule } from './modules/medical-reports/medical-reports.module';
 
 @Module({
   imports: [
@@ -43,6 +47,10 @@ import { MedicinesModule } from './modules/medicines/medicines.module';
     RemindersModule,
     DocumentsModule,
     MedicinesModule,
+    DoctorsModule,
+    AppointmentsModule,
+    PrescriptionsModule,
+    MedicalReportsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

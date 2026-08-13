@@ -40,6 +40,24 @@ export type MedicinesStackParamList = {
   EditMedicine: { id: string };
 };
 
+export type ManageStackParamList = {
+  ManageHome: undefined;
+  DoctorList: undefined;
+  DoctorDetail: { id: string };
+  CreateDoctor: undefined;
+  EditDoctor: { id: string };
+  AppointmentList: undefined;
+  AppointmentDetail: { id: string };
+  CreateAppointment: undefined;
+  EditAppointment: { id: string };
+  PrescriptionList: undefined;
+  PrescriptionDetail: { id: string };
+  CreatePrescription: undefined;
+  MedicalReportList: undefined;
+  MedicalReportDetail: { id: string };
+  CreateMedicalReport: undefined;
+};
+
 export type MainTabParamList = {
   HomeTab: undefined;
   HealthTab: undefined;
