@@ -27,7 +27,8 @@ export class NotificationSenderService implements OnModuleInit {
     const privateKey = this.config.get<string>('notification.fcmPrivateKey');
     const clientEmail = this.config.get<string>('notification.fcmClientEmail');
 
-    if (!projectId || !clientEmail || !privateKey || privateKey === '') {
+    const isPlaceholder = (v: string | undefined) => !v || v.startsWith('your-');
+    if (isPlaceholder(projectId) || isPlaceholder(clientEmail) || isPlaceholder(privateKey)) {
       this.logger.warn('FCM not configured — push notifications disabled');
       return;
     }
