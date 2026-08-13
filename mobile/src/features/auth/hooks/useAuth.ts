@@ -62,6 +62,13 @@ export function useLogout() {
   return { logout, loading };
 }
 
+export function useAuth() {
+  const { logout } = useLogout();
+  const { login } = useLogin();
+  const { register } = useRegister();
+  return { logout, login, register };
+}
+
 function extractErrorMessage(e: unknown): string | null {
   if (
     e &&

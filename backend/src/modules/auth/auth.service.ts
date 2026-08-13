@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -8,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../shared/prisma/prisma.service';
+import { EmailService } from '../../shared/email/email.service';
 import { JwtPayload } from '../../common/decorators/current-user.decorator';
 import {
   ForgotPasswordDto,
@@ -23,6 +25,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   // ── Register ────────────────────────────────────────────────────────────────
@@ -108,37 +111,47 @@ export class AuthService {
 
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    // Always return the same response — no email enumeration
-    if (!user) return;
+    if (!user) return; // No email enumeration
+
+    // Invalidate any existing reset tokens
+    await this.prisma.passwordResetToken.updateMany({
+      where: { userId: user.id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
 
     const rawToken = randomBytes(64).toString('hex');
     const tokenHash = this.hashToken(rawToken);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-    // Store hashed reset token (reuse refresh_tokens table pattern via a separate field
-    // is not available — store in a dedicated way using user metadata for now;
-    // Sprint 2 will add a proper PasswordResetToken model or email service)
-    // For Sprint 1: store on user record as a temporary measure
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        // We store the hash in a JSON field via notes — Sprint 2 adds proper model
-        // This is intentionally minimal for Sprint 1 foundation
-      },
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
     });
 
-    // TODO Sprint 2: send email with reset link via EmailService
-    // The raw token would be sent; hash is stored server-side
-    void rawToken;
-    void tokenHash;
-    void expiresAt;
+    const appUrl = this.config.get<string>('app.appUrl') ?? 'https://example.com';
+    const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
+    await this.emailService.sendPasswordReset(user.email, resetUrl);
   }
 
   // ── Reset Password ───────────────────────────────────────────────────────────
 
-  async resetPassword(_dto: ResetPasswordDto) {
-    // TODO Sprint 2: implement with PasswordResetToken model + EmailService
-    throw new UnauthorizedException('Password reset requires email service — available in Sprint 2');
+  async resetPassword(dto: ResetPasswordDto) {
+    const tokenHash = this.hashToken(dto.token);
+    const record = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const rounds = this.config.get<number>('auth.bcryptRounds') ?? 12;
+    const passwordHash = await bcrypt.hash(dto.password, rounds);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+      this.prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+      this.prisma.refreshToken.updateMany({ where: { userId: record.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
+    ]);
+
+    return { message: 'Password reset successful' };
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

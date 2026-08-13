@@ -10,6 +10,14 @@ export type HomeStackParamList = {
   Dashboard: undefined;
 };
 
+export type ProfileStackParamList = {
+  ProfileHome: undefined;
+  EditProfile: undefined;
+  ChangePassword: undefined;
+  NotificationSettings: undefined;
+  DeleteAccount: undefined;
+};
+
 export type MainTabParamList = {
   HomeTab: undefined;
   HealthTab: undefined;

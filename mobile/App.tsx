@@ -1,6 +1,11 @@
 import React from 'react';
+import { QueryProvider } from './src/app/providers/QueryProvider';
 import RootNavigator from './src/app/navigation/RootNavigator';
 
 export default function App() {
-  return <RootNavigator />;
+  return (
+    <QueryProvider>
+      <RootNavigator />
+    </QueryProvider>
+  );
 }
