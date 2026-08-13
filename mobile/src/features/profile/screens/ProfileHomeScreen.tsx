@@ -19,6 +19,7 @@ export function ProfileHomeScreen() {
 
   const menuItems = [
     { label: 'Edit Profile', screen: 'EditProfile' as const },
+    { label: 'Health Profile', screen: 'HealthProfile' as const },
     { label: 'Change Password', screen: 'ChangePassword' as const },
     { label: 'Notification Settings', screen: 'NotificationSettings' as const },
     { label: 'Delete Account', screen: 'DeleteAccount' as const },
