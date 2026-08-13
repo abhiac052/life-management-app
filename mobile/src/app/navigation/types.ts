@@ -28,6 +28,7 @@ export type RemindersStackParamList = {
 
 export type VaultStackParamList = {
   VaultHome: undefined;
+  CategoryDocuments: { category: string; label: string };
   DocumentDetail: { id: string };
   CreateDocument: undefined;
   EditDocument: { id: string };

@@ -1,205 +1,270 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-  RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View,
+  Animated, RefreshControl, ScrollView, StyleSheet, Text, View, StatusBar,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDashboard } from '../hooks/useDashboard';
 import { LoadingSkeleton } from '../../../shared/components/Card';
+import { Icon } from '../../../shared/components/Icon';
 import { colors, spacing, typography, radius, shadows } from '../../../shared/theme';
-import type { HomeStackParamList } from '../../../app/navigation/types';
-
-type Nav = NativeStackNavigationProp<HomeStackParamList>;
 
 function daysUntil(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function SectionHeader({ title, count, color }: { title: string; count?: number; color?: string }) {
+function DaysChip({ days }: { days: number }) {
+  const color = days < 0 ? colors.error : days <= 3 ? colors.warning : colors.textSecondary;
+  const bg    = days < 0 ? colors.errorLight : days <= 3 ? colors.warningLight : colors.backgroundSecondary;
+  const label = days < 0 ? 'Overdue' : days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`;
   return (
-    <View style={styles.sectionHeader}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {count !== undefined && count > 0 && (
-        <View style={[styles.countBadge, { backgroundColor: (color ?? colors.primary) + '20' }]}>
-          <Text style={[styles.countBadgeText, { color: color ?? colors.primary }]}>{count}</Text>
-        </View>
-      )}
+    <View style={[styles.chip, { backgroundColor: bg }]}>
+      <Text style={[styles.chipText, { color }]}>{label}</Text>
     </View>
+  );
+}
+
+function AnimatedCard({ children, index }: { children: React.ReactNode; index: number }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: 1, tension: 70, friction: 12,
+      delay: index * 80, useNativeDriver: true,
+    }).start();
+  }, []);
+  return (
+    <Animated.View style={{
+      opacity: anim,
+      transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
+    }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function SectionCard({ icon, iconColor, title, children, index }: {
+  icon: string; iconColor: string; title: string; children: React.ReactNode; index: number;
+}) {
+  return (
+    <AnimatedCard index={index}>
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={[styles.cardIconBadge, { backgroundColor: iconColor + '18' }]}>
+            <Icon name={icon} size={16} color={iconColor} />
+          </View>
+          <Text style={styles.cardTitle}>{title}</Text>
+        </View>
+        {children}
+      </View>
+    </AnimatedCard>
   );
 }
 
 export function DashboardScreen() {
   const { data, isLoading, refetch, isRefetching } = useDashboard();
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(headerAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  }, []);
 
   const greeting = () => {
     const h = new Date().getHours();
-    if (h < 12) return 'Good morning 🌅';
-    if (h < 17) return 'Good afternoon ☀️';
-    return 'Good evening 🌙';
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
   };
 
   if (isLoading) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.greeting}>{greeting()}</Text>
-        {[1, 2, 3, 4].map((i) => <LoadingSkeleton key={i} height={100} style={styles.skeleton} />)}
-      </ScrollView>
+      <View style={styles.container}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.headerBg} />
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.headerSection}>
+            <LoadingSkeleton width={120} height={12} style={{ borderRadius: 6, marginBottom: 8 }} />
+            <LoadingSkeleton width={200} height={26} style={{ borderRadius: 8 }} />
+          </View>
+          {[1, 2, 3].map((i) => <LoadingSkeleton key={i} height={110} style={styles.skeletonCard} />)}
+        </ScrollView>
+      </View>
     );
   }
 
   if (!data) return null;
 
   const { doses, reminders, appointments, expiringDocs, expiringWarranties, vehicleAlerts } = data;
-  const hasAlerts = reminders.overdue > 0 || expiringDocs.length > 0 || expiringWarranties.length > 0 || vehicleAlerts.length > 0;
+  const allClear = reminders.overdue === 0 && reminders.upcoming.length === 0 &&
+    appointments.length === 0 && expiringDocs.length === 0 &&
+    expiringWarranties.length === 0 && vehicleAlerts.length === 0 && doses.pending === 0;
+
+  let cardIndex = 0;
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { void refetch(); }} />}
-    >
-      <Text style={styles.greeting}>{greeting()}</Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.headerBg} />
 
-      {/* Overdue alert banner */}
-      {reminders.overdue > 0 && (
-        <View style={styles.alertBanner}>
-          <Text style={styles.alertText}>⚠️ {reminders.overdue} overdue reminder{reminders.overdue > 1 ? 's' : ''}</Text>
-        </View>
-      )}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => { void refetch(); }} tintColor={colors.white} />}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <Animated.View style={[styles.headerSection, {
+          opacity: headerAnim,
+          transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
+        }]}>
+          <Text style={styles.greetingLabel}>{greeting()} 👋</Text>
+          <Text style={styles.greetingTitle}>Your Overview</Text>
+        </Animated.View>
 
-      {/* Today's Doses */}
-      <View style={styles.card}>
-        <SectionHeader title="Today's Doses" count={doses.pending} color={doses.pending > 0 ? colors.warning : colors.success} />
-        <View style={styles.doseRow}>
-          <DoseStat label="Total" value={doses.total} color={colors.primary} />
-          <DoseStat label="Taken" value={doses.taken} color={colors.success} />
-          <DoseStat label="Pending" value={doses.pending} color={doses.pending > 0 ? colors.warning : colors.textDisabled} />
-        </View>
-        {doses.nextDose && (
-          <View style={styles.nextDose}>
-            <Text style={styles.nextDoseLabel}>Next: </Text>
-            <Text style={styles.nextDoseText}>{doses.nextDose.medicineName} at {doses.nextDose.time}</Text>
+        {/* Overdue banner */}
+        {reminders.overdue > 0 && (
+          <AnimatedCard index={0}>
+            <View style={styles.alertBanner}>
+              <Icon name="alert-circle" size={18} color={colors.white} />
+              <Text style={styles.alertText}>{reminders.overdue} overdue reminder{reminders.overdue > 1 ? 's' : ''}</Text>
+            </View>
+          </AnimatedCard>
+        )}
+
+        {/* Doses */}
+        <AnimatedCard index={cardIndex++}>
+          <View style={styles.dosesCard}>
+            <View style={styles.dosesHeader}>
+              <View style={[styles.cardIconBadge, { backgroundColor: colors.primaryGlow }]}>
+                <Icon name="pill" size={16} color={colors.primary} />
+              </View>
+              <Text style={styles.cardTitle}>Today's Doses</Text>
+              {doses.pending > 0 && (
+                <View style={styles.pendingBadge}>
+                  <Text style={styles.pendingBadgeText}>{doses.pending} pending</Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.doseStatsRow}>
+              <DoseStat value={doses.total}   label="Total"   color={colors.text} />
+              <View style={styles.doseStatDivider} />
+              <DoseStat value={doses.taken}   label="Taken"   color={colors.success} />
+              <View style={styles.doseStatDivider} />
+              <DoseStat value={doses.pending} label="Pending" color={doses.pending > 0 ? colors.primary : colors.textDisabled} />
+            </View>
+            {doses.nextDose && (
+              <View style={styles.nextDoseRow}>
+                <Icon name="clock-outline" size={14} color={colors.primary} />
+                <Text style={styles.nextDoseText} numberOfLines={1}>
+                  Next: <Text style={styles.nextDoseName}>{doses.nextDose.medicineName}</Text> at {doses.nextDose.time}
+                </Text>
+              </View>
+            )}
+            {doses.total === 0 && <Text style={styles.emptyInCard}>No medicines scheduled today</Text>}
           </View>
-        )}
-        {doses.total === 0 && (
-          <Text style={styles.emptyText}>No medicines scheduled today</Text>
-        )}
-      </View>
+        </AnimatedCard>
 
-      {/* Upcoming Reminders */}
-      {reminders.upcoming.length > 0 && (
-        <View style={styles.card}>
-          <SectionHeader title="Upcoming Reminders" />
-          {reminders.upcoming.map((r) => {
-            const due = new Date(r.dueDate);
-            const days = daysUntil(r.dueDate);
-            const dueLabel = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days}d`;
-            return (
-              <View key={r.id} style={styles.listRow}>
+        {reminders.upcoming.length > 0 && (
+          <SectionCard icon="bell-ring-outline" iconColor={colors.primary} title="Upcoming Reminders" index={cardIndex++}>
+            {reminders.upcoming.map((r, i) => (
+              <View key={r.id} style={[styles.listRow, i > 0 && styles.listRowBorder]}>
                 <View style={styles.listRowLeft}>
                   <Text style={styles.listRowTitle} numberOfLines={1}>{r.title}</Text>
-                  <Text style={styles.listRowSub}>{due.toLocaleDateString()} {due.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                  <Text style={styles.listRowSub} numberOfLines={1}>
+                    {new Date(r.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    {' · '}
+                    {new Date(r.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
                 </View>
-                <Text style={[styles.dueChip, { color: days <= 1 ? colors.warning : colors.textSecondary }]}>{dueLabel}</Text>
+                <DaysChip days={daysUntil(r.dueDate)} />
               </View>
-            );
-          })}
-        </View>
-      )}
+            ))}
+          </SectionCard>
+        )}
 
-      {/* Upcoming Appointments */}
-      {appointments.length > 0 && (
-        <View style={styles.card}>
-          <SectionHeader title="Upcoming Appointments" />
-          {appointments.map((a) => (
-            <View key={a.id} style={styles.listRow}>
-              <View style={styles.listRowLeft}>
-                <Text style={styles.listRowTitle}>{a.doctorName}</Text>
-                <Text style={styles.listRowSub}>{new Date(a.date).toLocaleDateString()} at {a.time}{a.purpose ? ` · ${a.purpose}` : ''}</Text>
-              </View>
-              <Text style={styles.dueChip}>{daysUntil(a.date)}d</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Expiring Documents */}
-      {expiringDocs.length > 0 && (
-        <View style={styles.card}>
-          <SectionHeader title="Documents Expiring Soon" count={expiringDocs.length} color={colors.warning} />
-          {expiringDocs.map((d) => {
-            const days = daysUntil(d.expiryDate);
-            return (
-              <View key={d.id} style={styles.listRow}>
+        {appointments.length > 0 && (
+          <SectionCard icon="calendar-heart" iconColor={colors.accent} title="Appointments" index={cardIndex++}>
+            {appointments.map((a, i) => (
+              <View key={a.id} style={[styles.listRow, i > 0 && styles.listRowBorder]}>
+                <View style={[styles.apptIcon, { backgroundColor: colors.accentLight }]}>
+                  <Icon name="doctor" size={16} color={colors.accent} />
+                </View>
                 <View style={styles.listRowLeft}>
-                  <Text style={styles.listRowTitle}>{d.name}</Text>
-                  <Text style={styles.listRowSub}>{d.category} · expires {new Date(d.expiryDate).toLocaleDateString()}</Text>
+                  <Text style={styles.listRowTitle} numberOfLines={1}>{a.doctorName}</Text>
+                  <Text style={styles.listRowSub} numberOfLines={1}>
+                    {new Date(a.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · {a.time}
+                    {a.purpose ? ` · ${a.purpose}` : ''}
+                  </Text>
                 </View>
-                <Text style={[styles.dueChip, { color: days <= 7 ? colors.error : colors.warning }]}>{days}d</Text>
+                <DaysChip days={daysUntil(a.date)} />
               </View>
-            );
-          })}
-        </View>
-      )}
+            ))}
+          </SectionCard>
+        )}
 
-      {/* Expiring Warranties */}
-      {expiringWarranties.length > 0 && (
-        <View style={styles.card}>
-          <SectionHeader title="Warranties Expiring Soon" count={expiringWarranties.length} color={colors.warning} />
-          {expiringWarranties.map((w) => {
-            const days = daysUntil(w.expiryDate);
-            return (
-              <View key={w.id} style={styles.listRow}>
+        {expiringDocs.length > 0 && (
+          <SectionCard icon="file-document-outline" iconColor={colors.warning} title="Documents Expiring" index={cardIndex++}>
+            {expiringDocs.map((d, i) => (
+              <View key={d.id} style={[styles.listRow, i > 0 && styles.listRowBorder]}>
                 <View style={styles.listRowLeft}>
-                  <Text style={styles.listRowTitle}>{w.productName}</Text>
-                  <Text style={styles.listRowSub}>Expires {new Date(w.expiryDate).toLocaleDateString()}</Text>
+                  <Text style={styles.listRowTitle} numberOfLines={1}>{d.name}</Text>
+                  <Text style={styles.listRowSub} numberOfLines={1}>{d.category} · {new Date(d.expiryDate).toLocaleDateString()}</Text>
                 </View>
-                <Text style={[styles.dueChip, { color: days <= 7 ? colors.error : colors.warning }]}>{days}d</Text>
+                <DaysChip days={daysUntil(d.expiryDate)} />
               </View>
-            );
-          })}
-        </View>
-      )}
+            ))}
+          </SectionCard>
+        )}
 
-      {/* Vehicle Alerts */}
-      {vehicleAlerts.length > 0 && (
-        <View style={styles.card}>
-          <SectionHeader title="Vehicle Alerts" count={vehicleAlerts.length} color={colors.warning} />
-          {vehicleAlerts.map((v) => {
-            const alerts = [
-              v.insuranceExpiry && { label: 'Insurance', date: v.insuranceExpiry },
-              v.pucExpiry && { label: 'PUC', date: v.pucExpiry },
-              v.nextServiceDate && { label: 'Service', date: v.nextServiceDate },
-            ].filter(Boolean) as { label: string; date: string }[];
-            return alerts.map((a) => {
-              const days = daysUntil(a.date);
-              if (days > 30) return null;
-              return (
-                <View key={`${v.id}-${a.label}`} style={styles.listRow}>
-                  <View style={styles.listRowLeft}>
-                    <Text style={styles.listRowTitle}>{v.name} — {a.label}</Text>
-                    <Text style={styles.listRowSub}>{new Date(a.date).toLocaleDateString()}</Text>
+        {expiringWarranties.length > 0 && (
+          <SectionCard icon="shield-alert-outline" iconColor={colors.warning} title="Warranties Expiring" index={cardIndex++}>
+            {expiringWarranties.map((w, i) => (
+              <View key={w.id} style={[styles.listRow, i > 0 && styles.listRowBorder]}>
+                <View style={styles.listRowLeft}>
+                  <Text style={styles.listRowTitle} numberOfLines={1}>{w.productName}</Text>
+                  <Text style={styles.listRowSub} numberOfLines={1}>{new Date(w.expiryDate).toLocaleDateString()}</Text>
+                </View>
+                <DaysChip days={daysUntil(w.expiryDate)} />
+              </View>
+            ))}
+          </SectionCard>
+        )}
+
+        {vehicleAlerts.length > 0 && (
+          <SectionCard icon="car-wrench" iconColor={colors.info} title="Vehicle Alerts" index={cardIndex++}>
+            {vehicleAlerts.flatMap((v) =>
+              ([
+                v.insuranceExpiry  && { label: 'Insurance', date: v.insuranceExpiry },
+                v.pucExpiry        && { label: 'PUC',       date: v.pucExpiry },
+                v.nextServiceDate  && { label: 'Service',   date: v.nextServiceDate },
+              ] as ({ label: string; date: string } | false)[])
+                .filter((a): a is { label: string; date: string } => !!a && daysUntil(a.date) <= 30)
+                .map((a, i) => (
+                  <View key={`${v.id}-${a.label}`} style={[styles.listRow, i > 0 && styles.listRowBorder]}>
+                    <View style={styles.listRowLeft}>
+                      <Text style={styles.listRowTitle} numberOfLines={1}>{v.name} — {a.label}</Text>
+                      <Text style={styles.listRowSub} numberOfLines={1}>{new Date(a.date).toLocaleDateString()}</Text>
+                    </View>
+                    <DaysChip days={daysUntil(a.date)} />
                   </View>
-                  <Text style={[styles.dueChip, { color: days <= 7 ? colors.error : colors.warning }]}>{days}d</Text>
-                </View>
-              );
-            });
-          })}
-        </View>
-      )}
+                ))
+            )}
+          </SectionCard>
+        )}
 
-      {/* All clear */}
-      {!hasAlerts && doses.pending === 0 && reminders.upcoming.length === 0 && appointments.length === 0 && (
-        <View style={styles.allClear}>
-          <Text style={styles.allClearIcon}>✅</Text>
-          <Text style={styles.allClearText}>All clear! Nothing needs attention.</Text>
-        </View>
-      )}
-    </ScrollView>
+        {allClear && (
+          <AnimatedCard index={1}>
+            <View style={styles.allClear}>
+              <View style={styles.allClearIconWrap}>
+                <Icon name="check-circle-outline" size={36} color={colors.success} />
+              </View>
+              <Text style={styles.allClearTitle}>All clear!</Text>
+              <Text style={styles.allClearSub}>Nothing needs your attention.</Text>
+            </View>
+          </AnimatedCard>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
-function DoseStat({ label, value, color }: { label: string; value: number; color: string }) {
+function DoseStat({ value, label, color }: { value: number; label: string; color: string }) {
   return (
     <View style={styles.doseStat}>
       <Text style={[styles.doseStatValue, { color }]}>{value}</Text>
@@ -210,33 +275,74 @@ function DoseStat({ label, value, color }: { label: string; value: number; color
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl },
-  greeting: { ...typography.h2, color: colors.text },
-  skeleton: { borderRadius: radius.md },
-  alertBanner: {
-    backgroundColor: colors.error + '15', borderRadius: radius.md,
-    padding: spacing.md, borderLeftWidth: 3, borderLeftColor: colors.error,
+  headerBg: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: 130, backgroundColor: colors.primary,
   },
-  alertText: { ...typography.body, color: colors.error, fontWeight: '600' },
-  card: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, ...shadows.sm, gap: spacing.sm },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { ...typography.h3, color: colors.text },
-  countBadge: { paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.full },
-  countBadgeText: { ...typography.label, fontWeight: '700' },
-  doseRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: spacing.xs },
-  doseStat: { alignItems: 'center' },
-  doseStatValue: { ...typography.h2, fontWeight: '700' },
+  content: { paddingTop: spacing.lg, paddingHorizontal: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl },
+
+  headerSection: { paddingTop: spacing.sm, paddingBottom: spacing.md },
+  greetingLabel: { ...typography.label, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase', marginBottom: spacing.xs },
+  greetingTitle: { ...typography.h2, color: colors.white },
+
+  skeletonCard: { borderRadius: radius.lg, marginBottom: spacing.sm },
+
+  alertBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    backgroundColor: colors.primaryDark, borderRadius: radius.md, padding: spacing.md,
+  },
+  alertText: { ...typography.body, color: colors.white, fontWeight: '600', flex: 1 },
+
+  dosesCard: {
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    padding: spacing.md, gap: spacing.md, ...shadows.md,
+  },
+  dosesHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  pendingBadge: {
+    marginLeft: 'auto', backgroundColor: colors.primaryGlow,
+    paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full,
+  },
+  pendingBadgeText: { ...typography.label, color: colors.primary },
+  doseStatsRow: {
+    flexDirection: 'row', backgroundColor: colors.backgroundSecondary,
+    borderRadius: radius.md, padding: spacing.md,
+  },
+  doseStat: { flex: 1, alignItems: 'center' },
+  doseStatValue: { ...typography.h2, fontWeight: '800' },
   doseStatLabel: { ...typography.label, color: colors.textSecondary, marginTop: 2 },
-  nextDose: { flexDirection: 'row', backgroundColor: colors.primary + '10', borderRadius: radius.sm, padding: spacing.sm },
-  nextDoseLabel: { ...typography.bodySmall, color: colors.primary, fontWeight: '600' },
-  nextDoseText: { ...typography.bodySmall, color: colors.primary },
-  emptyText: { ...typography.bodySmall, color: colors.textDisabled, textAlign: 'center', paddingVertical: spacing.xs },
-  listRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.xs, borderTopWidth: 1, borderTopColor: colors.divider },
-  listRowLeft: { flex: 1 },
+  doseStatDivider: { width: 1, backgroundColor: colors.border },
+  nextDoseRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    backgroundColor: colors.primaryGlow, borderRadius: radius.sm, padding: spacing.sm,
+  },
+  nextDoseText: { ...typography.bodySmall, color: colors.primary, flex: 1 },
+  nextDoseName: { fontWeight: '700' },
+  emptyInCard: { ...typography.bodySmall, color: colors.textDisabled, textAlign: 'center' },
+
+  card: {
+    backgroundColor: colors.surface, borderRadius: radius.lg,
+    padding: spacing.md, gap: spacing.sm, ...shadows.sm,
+  },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  cardIconBadge: { width: 30, height: 30, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  cardTitle: { ...typography.h3, color: colors.text, flex: 1 },
+
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  listRowBorder: { borderTopWidth: 1, borderTopColor: colors.divider },
+  listRowLeft: { flex: 1, minWidth: 0 },
   listRowTitle: { ...typography.body, color: colors.text, fontWeight: '500' },
   listRowSub: { ...typography.bodySmall, color: colors.textSecondary, marginTop: 2 },
-  dueChip: { ...typography.label, fontWeight: '600', color: colors.textSecondary, minWidth: 32, textAlign: 'right' },
+  apptIcon: { width: 34, height: 34, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+
+  chip: { paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full },
+  chipText: { ...typography.label, fontWeight: '700' },
+
   allClear: { alignItems: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
-  allClearIcon: { fontSize: 48 },
-  allClearText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  allClearIconWrap: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: colors.successLight, alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  allClearTitle: { ...typography.h3, color: colors.text },
+  allClearSub: { ...typography.body, color: colors.textSecondary },
 });

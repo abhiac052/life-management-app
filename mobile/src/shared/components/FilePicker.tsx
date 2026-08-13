@@ -50,16 +50,18 @@ export function FilePicker({ label, file, onChange, allowedTypes = [types.pdf, t
 }
 
 const styles = StyleSheet.create({
-  label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.xs },
+  label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, textTransform: 'uppercase' },
   field: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     padding: spacing.sm,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: 48,
   },
   fieldFilled: { borderColor: colors.primary },
   fieldText: { ...typography.body, color: colors.text, flex: 1, marginRight: spacing.xs },

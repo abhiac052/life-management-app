@@ -1,34 +1,67 @@
 export const colors = {
-  primary: '#4F46E5',
-  primaryDark: '#3730A3',
-  primaryLight: '#818CF8',
+  // Brand — warm orange-red
+  primary: '#E8441A',
+  primaryDark: '#C23510',
+  primaryLight: '#FF6B42',
+  primaryGlow: 'rgba(232, 68, 26, 0.10)',
+  primaryGlowStrong: 'rgba(232, 68, 26, 0.18)',
 
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
+  // Accent — amber
+  accent: '#FF9500',
+  accentLight: 'rgba(255, 149, 0, 0.12)',
 
-  background: '#F9FAFB',
+  // Semantic
+  success: '#1DB954',
+  successLight: 'rgba(29, 185, 84, 0.10)',
+  warning: '#FF9500',
+  warningLight: 'rgba(255, 149, 0, 0.10)',
+  error: '#E8441A',
+  errorLight: 'rgba(232, 68, 26, 0.10)',
+  info: '#0A84FF',
+  infoLight: 'rgba(10, 132, 255, 0.10)',
+
+  // Backgrounds — clean white
+  background: '#F7F7F8',
+  backgroundSecondary: '#EFEFEF',
   surface: '#FFFFFF',
-  border: '#E5E7EB',
-  divider: '#F3F4F6',
+  surfaceElevated: '#FFFFFF',
+  surfaceHighlight: '#FFF5F2',
 
-  text: '#111827',
-  textSecondary: '#6B7280',
-  textDisabled: '#9CA3AF',
+  // Borders
+  border: '#E8E8EC',
+  borderStrong: '#D0D0D8',
+  divider: '#F0F0F4',
+
+  // Text
+  text: '#1A1A2E',
+  textSecondary: '#6B6B80',
+  textDisabled: '#ADADBE',
   textInverse: '#FFFFFF',
 
-  overlay: 'rgba(0,0,0,0.5)',
+  // Misc
+  overlay: 'rgba(0,0,0,0.45)',
+  white: '#FFFFFF',
+  black: '#000000',
+};
+
+// Poppins — static weight files, works reliably on Android + iOS
+export const fonts = {
+  regular:   'Poppins-Regular',
+  medium:    'Poppins-Medium',
+  semiBold:  'Poppins-SemiBold',
+  bold:      'Poppins-Bold',
+  extraBold: 'Poppins-ExtraBold',
 };
 
 export const typography = {
-  h1: { fontSize: 28, fontWeight: '700' as const, lineHeight: 36 },
-  h2: { fontSize: 22, fontWeight: '700' as const, lineHeight: 30 },
-  h3: { fontSize: 18, fontWeight: '600' as const, lineHeight: 26 },
-  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  bodySmall: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
-  label: { fontSize: 12, fontWeight: '500' as const, lineHeight: 16 },
-  button: { fontSize: 15, fontWeight: '600' as const, lineHeight: 20 },
+  h1:        { fontFamily: 'Poppins-ExtraBold', fontSize: 30, lineHeight: 38, letterSpacing: -0.5 },
+  h2:        { fontFamily: 'Poppins-Bold',      fontSize: 24, lineHeight: 32, letterSpacing: -0.3 },
+  h3:        { fontFamily: 'Poppins-SemiBold',  fontSize: 18, lineHeight: 26 },
+  body:      { fontFamily: 'Poppins-Regular',   fontSize: 15, lineHeight: 22 },
+  bodySmall: { fontFamily: 'Poppins-Regular',   fontSize: 13, lineHeight: 18 },
+  label:     { fontFamily: 'Poppins-SemiBold',  fontSize: 11, lineHeight: 16, letterSpacing: 0.4 },
+  button:    { fontFamily: 'Poppins-Bold',      fontSize: 15, lineHeight: 20, letterSpacing: 0.2 },
+  caption:   { fontFamily: 'Poppins-Regular',   fontSize: 11, lineHeight: 15 },
 };
 
 export const spacing = {
@@ -38,31 +71,47 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  xxxl: 64,
 };
 
 export const radius = {
-  sm: 6,
-  md: 10,
-  lg: 16,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 18,
+  xl: 26,
   full: 999,
 };
 
 export const shadows = {
   sm: {
-    shadowColor: '#000',
+    shadowColor: '#1A1A2E',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#1A1A2E',
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  lg: {
+    shadowColor: '#E8441A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 8,
   },
 };
 
-const theme = { colors, typography, spacing, radius, shadows };
+export const gradients = {
+  primary: ['#E8441A', '#FF6B42'] as const,
+  accent: ['#FF9500', '#FFBD00'] as const,
+  hero: ['#E8441A', '#C23510'] as const,
+};
+
+const theme = { colors, typography, spacing, radius, shadows, gradients };
 export default theme;

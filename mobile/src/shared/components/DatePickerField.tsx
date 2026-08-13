@@ -66,16 +66,18 @@ export function DatePickerField({ label, value, onChange, mode = 'date', placeho
 }
 
 const styles = StyleSheet.create({
-  label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.xs },
+  label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, textTransform: 'uppercase' },
   field: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     padding: spacing.sm,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    height: 48,
   },
   fieldText: { ...typography.body, color: colors.text },
   placeholder: { color: colors.textDisabled },

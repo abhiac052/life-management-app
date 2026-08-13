@@ -30,7 +30,7 @@ export function Input({ label, error, rightIcon, style, ...props }: InputProps) 
 
 const styles = StyleSheet.create({
   wrapper: { marginBottom: spacing.md },
-  label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.xs },
+  label: { ...typography.label, color: colors.textSecondary, marginBottom: spacing.sm, textTransform: 'uppercase' },
   container: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,117 +1,190 @@
-import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, FlatList, StyleSheet, Text, TouchableOpacity, View, StatusBar, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDocuments } from '../hooks/useDocuments';
-import { EmptyState, LoadingSkeleton } from '../../../shared/components/Card';
-import { colors, spacing, typography } from '../../../shared/theme';
+import { Icon } from '../../../shared/components/Icon';
+import { colors, spacing, typography, radius, shadows } from '../../../shared/theme';
 import type { VaultStackParamList } from '../../../app/navigation/types';
-import type { Document } from '../services/documents.service';
 
 type Nav = NativeStackNavigationProp<VaultStackParamList>;
 
-const CATEGORIES = ['ALL', 'AADHAAR', 'PAN', 'PASSPORT', 'DRIVING_LICENCE', 'INSURANCE', 'PROPERTY', 'EDUCATION', 'MEDICAL', 'VEHICLE', 'OTHER'];
+const { width } = Dimensions.get('window');
+const CARD_WIDTH = (width - spacing.md * 2 - spacing.sm) / 2;
+
+const CATEGORIES = [
+  { key: 'AADHAAR',         label: 'Aadhaar',   icon: 'card-account-details-outline', color: '#E8441A' },
+  { key: 'PAN',             label: 'PAN Card',  icon: 'credit-card-outline',           color: '#0A84FF' },
+  { key: 'PASSPORT',        label: 'Passport',  icon: 'passport',                      color: '#1DB954' },
+  { key: 'DRIVING_LICENCE', label: 'Licence',   icon: 'car-key',                       color: '#FF9500' },
+  { key: 'INSURANCE',       label: 'Insurance', icon: 'shield-check-outline',          color: '#5856D6' },
+  { key: 'PROPERTY',        label: 'Property',  icon: 'home-outline',                  color: '#34C759' },
+  { key: 'EDUCATION',       label: 'Education', icon: 'school-outline',                color: '#FF2D55' },
+  { key: 'MEDICAL',         label: 'Medical',   icon: 'heart-pulse',                   color: '#FF3B30' },
+  { key: 'VEHICLE',         label: 'Vehicle',   icon: 'car-outline',                   color: '#007AFF' },
+  { key: 'OTHER',           label: 'Other',     icon: 'file-document-outline',         color: '#8E8E93' },
+];
+
+function CategoryBlock({ cat, count, index, onPress }: {
+  cat: typeof CATEGORIES[0];
+  count: number;
+  index: number;
+  onPress: () => void;
+}) {
+  const anim  = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.spring(anim, {
+      toValue: 1, tension: 80, friction: 12,
+      delay: index * 60, useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const handlePressIn  = () => Animated.spring(scale, { toValue: 0.95, tension: 200, friction: 10, useNativeDriver: true }).start();
+  const handlePressOut = () => Animated.spring(scale, { toValue: 1,    tension: 200, friction: 10, useNativeDriver: true }).start();
+
+  return (
+    <Animated.View style={{
+      opacity: anim,
+      transform: [
+        { scale },
+        { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
+      ],
+      width: CARD_WIDTH,
+    }}>
+      <TouchableOpacity
+        style={styles.block}
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        activeOpacity={1}
+      >
+        <View style={[styles.iconBox, { backgroundColor: cat.color + '18' }]}>
+          <Icon name={cat.icon} size={28} color={cat.color} />
+        </View>
+        <Text style={styles.blockLabel} numberOfLines={1}>{cat.label}</Text>
+        <View style={styles.blockFooter}>
+          <Text style={[styles.blockCount, { color: cat.color }]}>{count}</Text>
+          <Text style={styles.blockCountLabel}> {count === 1 ? 'doc' : 'docs'}</Text>
+        </View>
+        <View style={[styles.blockAccent, { backgroundColor: cat.color }]} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export function VaultHomeScreen() {
   const navigation = useNavigation<Nav>();
-  const [category, setCategory] = useState<string | undefined>(undefined);
-  const [search, setSearch] = useState('');
-  const { data, isLoading } = useDocuments({ category, search: search || undefined });
+  const { data } = useDocuments({});
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(headerAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+  }, []);
+
+  const docs = Array.isArray(data?.data) ? data!.data : [];
+  const totalCount = docs.length;
+
+  const countFor = (key: string) => docs.filter(d => d.category === key).length;
 
   return (
     <View style={styles.container}>
-      <TextInput
-        style={styles.search}
-        placeholder="Search documents..."
-        placeholderTextColor={colors.textDisabled}
-        value={search}
-        onChangeText={setSearch}
-      />
+      <StatusBar barStyle="light-content" />
+      <View style={styles.headerBg} />
+
+      <Animated.View style={[styles.header, {
+        opacity: headerAnim,
+        transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
+      }]}>
+        <View>
+          <Text style={styles.headerLabel}>Secure Storage</Text>
+          <Text style={styles.headerTitle}>My Vault</Text>
+        </View>
+        <View style={styles.headerCount}>
+          <Text style={styles.headerCountNum}>{totalCount}</Text>
+          <Text style={styles.headerCountSub}>docs</Text>
+        </View>
+      </Animated.View>
 
       <FlatList
-        horizontal
         data={CATEGORIES}
-        keyExtractor={c => c}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categories}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[styles.catBtn, (item === 'ALL' ? !category : category === item) && styles.catActive]}
-            onPress={() => setCategory(item === 'ALL' ? undefined : item)}
-          >
-            <Text style={[styles.catText, (item === 'ALL' ? !category : category === item) && styles.catTextActive]}>
-              {item.replace('_', ' ')}
-            </Text>
-          </TouchableOpacity>
+        keyExtractor={item => item.key}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item, index }) => (
+          <CategoryBlock
+            cat={item}
+            count={countFor(item.key)}
+            index={index}
+            onPress={() => navigation.navigate('CategoryDocuments', { category: item.key, label: item.label })}
+          />
         )}
       />
 
-      {isLoading ? (
-        <View style={styles.skeletons}>
-          {[1, 2, 3].map(i => <LoadingSkeleton key={i} height={72} style={styles.skeleton} />)}
-        </View>
-      ) : (
-        <FlatList
-          data={data?.data ?? []}
-          keyExtractor={item => item.id}
-          contentContainerStyle={styles.list}
-          ListEmptyComponent={<EmptyState title="No documents" description="Tap + to upload one" />}
-          renderItem={({ item }) => (
-            <DocumentCard item={item} onPress={() => navigation.navigate('DocumentDetail', { id: item.id })} />
-          )}
-        />
-      )}
-
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('CreateDocument')}>
-        <Text style={styles.fabText}>+</Text>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => navigation.navigate('CreateDocument')}
+        activeOpacity={0.85}
+      >
+        <Icon name="plus" size={26} color={colors.white} />
       </TouchableOpacity>
     </View>
   );
 }
 
-function DocumentCard({ item, onPress }: { item: Document; onPress: () => void }) {
-  const isExpiringSoon = item.expiryDate && new Date(item.expiryDate) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  const isExpired = item.expiryDate && new Date(item.expiryDate) < new Date();
-  return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.8}>
-      <View style={styles.cardIcon}>
-        <Text style={styles.cardIconText}>{item.mimeType === 'application/pdf' ? '📄' : '🖼'}</Text>
-      </View>
-      <View style={styles.cardContent}>
-        <Text style={styles.cardName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.cardCategory}>{item.category.replace('_', ' ')}</Text>
-        {item.expiryDate && (
-          <Text style={[styles.cardExpiry, isExpired ? styles.expired : isExpiringSoon ? styles.expiringSoon : null]}>
-            {isExpired ? '⚠ Expired' : isExpiringSoon ? '⚠ Expiring soon' : `Expires ${new Date(item.expiryDate).toLocaleDateString()}`}
-          </Text>
-        )}
-      </View>
-      <Text style={styles.fileSize}>{(item.fileSize / 1024).toFixed(0)}KB</Text>
-    </TouchableOpacity>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  search: { margin: spacing.md, padding: spacing.md, backgroundColor: colors.surface, borderRadius: 10, borderWidth: 1, borderColor: colors.border, ...typography.body, color: colors.text },
-  categories: { paddingHorizontal: spacing.md, paddingBottom: spacing.sm, gap: spacing.sm },
-  catBtn: { paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  catActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  catText: { ...typography.label, color: colors.textSecondary },
-  catTextActive: { color: '#fff' },
-  list: { padding: spacing.md, gap: spacing.sm },
-  skeletons: { padding: spacing.md, gap: spacing.sm },
-  skeleton: { borderRadius: 10, marginBottom: spacing.sm },
-  card: { backgroundColor: colors.surface, borderRadius: 10, padding: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  cardIcon: { width: 44, height: 44, borderRadius: 10, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  cardIconText: { fontSize: 22 },
-  cardContent: { flex: 1 },
-  cardName: { ...typography.body, color: colors.text, fontWeight: '600' },
-  cardCategory: { ...typography.label, color: colors.textSecondary, marginTop: 2 },
-  cardExpiry: { ...typography.label, color: colors.textSecondary, marginTop: 2 },
-  expiringSoon: { color: colors.warning },
-  expired: { color: colors.error },
-  fileSize: { ...typography.label, color: colors.textDisabled },
-  fab: { position: 'absolute', bottom: spacing.xl, right: spacing.lg, width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  fabText: { fontSize: 28, color: '#fff', lineHeight: 32 },
+
+  headerBg: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: 120, backgroundColor: colors.primary,
+  },
+
+  header: {
+    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
+    paddingHorizontal: spacing.md, paddingTop: spacing.lg + spacing.sm, paddingBottom: spacing.md,
+  },
+  headerLabel: { ...typography.label, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: spacing.xs },
+  headerTitle: { ...typography.h2, color: colors.white },
+  headerCount: {
+    alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+  },
+  headerCountNum: { ...typography.h3, color: colors.white, fontWeight: '800' },
+  headerCountSub: { ...typography.caption, color: 'rgba(255,255,255,0.7)' },
+
+  grid: { paddingHorizontal: spacing.md, paddingBottom: 100, paddingTop: spacing.sm },
+  row: { gap: spacing.sm, marginBottom: spacing.sm },
+
+  block: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  iconBox: {
+    width: 56, height: 56, borderRadius: radius.lg,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  blockLabel: { ...typography.body, color: colors.text, fontWeight: '700', marginBottom: 4 },
+  blockFooter: { flexDirection: 'row', alignItems: 'baseline' },
+  blockCount: { ...typography.h3, fontWeight: '800' },
+  blockCountLabel: { ...typography.caption, color: colors.textSecondary },
+  blockAccent: {
+    position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
+  },
+
+  fab: {
+    position: 'absolute', bottom: spacing.xl, right: spacing.lg,
+    width: 56, height: 56, borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
+  },
 });
