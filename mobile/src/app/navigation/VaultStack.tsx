@@ -5,13 +5,14 @@ import { VaultHomeScreen } from '../../features/documents/screens/VaultHomeScree
 import { CategoryDocumentsScreen } from '../../features/documents/screens/CategoryDocumentsScreen';
 import { DocumentDetailScreen } from '../../features/documents/screens/DocumentDetailScreen';
 import { CreateDocumentScreen, EditDocumentScreen } from '../../features/documents/screens/DocumentFormScreens';
+import { stackScreenOptions } from './headerOptions';
 
 const Stack = createNativeStackNavigator<VaultStackParamList>();
 
 export default function VaultStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="VaultHome" component={VaultHomeScreen} options={{ title: 'Document Vault' }} />
+    <Stack.Navigator screenOptions={({ navigation }) => stackScreenOptions(navigation)}>
+      <Stack.Screen name="VaultHome" component={VaultHomeScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="CategoryDocuments"
         component={CategoryDocumentsScreen}

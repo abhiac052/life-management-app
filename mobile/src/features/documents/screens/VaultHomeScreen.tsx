@@ -1,5 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, FlatList, StyleSheet, Text, TouchableOpacity, View, StatusBar, Dimensions } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Animated, FlatList, StyleSheet, Text,
+  TouchableOpacity, View, StatusBar, Dimensions,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDocuments } from '../hooks/useDocuments';
@@ -25,6 +28,31 @@ const CATEGORIES = [
   { key: 'OTHER',           label: 'Other',     icon: 'file-document-outline',         color: '#8E8E93' },
 ];
 
+function ShimmerBlock({ delay }: { delay: number }) {
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 900, delay, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, []);
+
+  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] });
+
+  return (
+    <Animated.View style={[styles.shimmerBlock, { opacity, width: CARD_WIDTH }]}>
+      <View style={styles.shimmerIcon} />
+      <View style={styles.shimmerLine} />
+      <View style={styles.shimmerLineShort} />
+    </Animated.View>
+  );
+}
+
 function CategoryBlock({ cat, count, index, onPress }: {
   cat: typeof CATEGORIES[0];
   count: number;
@@ -35,14 +63,13 @@ function CategoryBlock({ cat, count, index, onPress }: {
   const scale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.spring(anim, {
-      toValue: 1, tension: 80, friction: 12,
-      delay: index * 60, useNativeDriver: true,
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 400,
+      delay: index * 50,
+      useNativeDriver: true,
     }).start();
   }, []);
-
-  const handlePressIn  = () => Animated.spring(scale, { toValue: 0.95, tension: 200, friction: 10, useNativeDriver: true }).start();
-  const handlePressOut = () => Animated.spring(scale, { toValue: 1,    tension: 200, friction: 10, useNativeDriver: true }).start();
 
   return (
     <Animated.View style={{
@@ -56,8 +83,8 @@ function CategoryBlock({ cat, count, index, onPress }: {
       <TouchableOpacity
         style={styles.block}
         onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+        onPressIn={() => Animated.spring(scale, { toValue: 0.95, tension: 200, friction: 10, useNativeDriver: true }).start()}
+        onPressOut={() => Animated.spring(scale, { toValue: 1, tension: 200, friction: 10, useNativeDriver: true }).start()}
         activeOpacity={1}
       >
         <View style={[styles.iconBox, { backgroundColor: cat.color + '18' }]}>
@@ -75,27 +102,49 @@ function CategoryBlock({ cat, count, index, onPress }: {
 }
 
 export function VaultHomeScreen() {
-  const navigation = useNavigation<Nav>();
-  const { data } = useDocuments({});
-  const headerAnim = useRef(new Animated.Value(0)).current;
+  const navigation  = useNavigation<Nav>();
+  const { data, isLoading } = useDocuments({});
+  const [ready, setReady] = useState(false);
 
+  const headerAnim  = useRef(new Animated.Value(0)).current;
+  const contentAnim = useRef(new Animated.Value(0)).current;
+
+  // Header slides in immediately
   useEffect(() => {
-    Animated.timing(headerAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+    Animated.timing(headerAnim, {
+      toValue: 1, duration: 350, useNativeDriver: true,
+    }).start();
   }, []);
 
-  const docs = Array.isArray(data?.data) ? data!.data : [];
-  const totalCount = docs.length;
+  // When data arrives, crossfade skeleton → grid
+  useEffect(() => {
+    if (!isLoading) {
+      // Small delay so skeleton doesn't flash away instantly
+      setTimeout(() => {
+        setReady(true);
+        Animated.timing(contentAnim, {
+          toValue: 1, duration: 350, useNativeDriver: true,
+        }).start();
+      }, 150);
+    }
+  }, [isLoading]);
 
-  const countFor = (key: string) => docs.filter(d => d.category === key).length;
+  const docs       = Array.isArray(data?.data) ? data!.data : [];
+  const totalCount = docs.length;
+  const countFor   = (key: string) => docs.filter(d => d.category === key).length;
+
+  // Fade out skeleton as grid fades in
+  const skeletonOpacity = contentAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={styles.headerBg} />
 
+      {/* Header */}
       <Animated.View style={[styles.header, {
         opacity: headerAnim,
-        transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-10, 0] }) }],
+        transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
       }]}>
         <View>
           <Text style={styles.headerLabel}>Secure Storage</Text>
@@ -107,22 +156,39 @@ export function VaultHomeScreen() {
         </View>
       </Animated.View>
 
-      <FlatList
-        data={CATEGORIES}
-        keyExtractor={item => item.key}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <CategoryBlock
-            cat={item}
-            count={countFor(item.key)}
-            index={index}
-            onPress={() => navigation.navigate('CategoryDocuments', { category: item.key, label: item.label })}
+      {/* Skeleton — fades out when ready */}
+      {!ready && (
+        <Animated.View style={[styles.skeletonWrap, { opacity: skeletonOpacity }]}>
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <View key={i} style={styles.skeletonRow}>
+              <ShimmerBlock delay={i * 80} />
+              <ShimmerBlock delay={i * 80 + 40} />
+            </View>
+          ))}
+        </Animated.View>
+      )}
+
+      {/* Real grid — fades in when ready */}
+      {ready && (
+        <Animated.View style={{ flex: 1, opacity: contentAnim }}>
+          <FlatList
+            data={CATEGORIES}
+            keyExtractor={item => item.key}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.grid}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item, index }) => (
+              <CategoryBlock
+                cat={item}
+                count={countFor(item.key)}
+                index={index}
+                onPress={() => navigation.navigate('CategoryDocuments', { category: item.key, label: item.label })}
+              />
+            )}
           />
-        )}
-      />
+        </Animated.View>
+      )}
 
       <TouchableOpacity
         style={styles.fab}
@@ -145,19 +211,31 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingTop: spacing.lg + spacing.sm, paddingBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.lg + spacing.sm,
+    paddingBottom: spacing.md,
   },
-  headerLabel: { ...typography.label, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: spacing.xs },
-  headerTitle: { ...typography.h2, color: colors.white },
-  headerCount: {
-    alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-  },
+  headerLabel:    { ...typography.label, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: spacing.xs },
+  headerTitle:    { ...typography.h2, color: colors.white },
+  headerCount:    { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
   headerCountNum: { ...typography.h3, color: colors.white, fontWeight: '800' },
   headerCountSub: { ...typography.caption, color: 'rgba(255,255,255,0.7)' },
 
+  // Shimmer skeleton
+  skeletonWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
+  skeletonRow:  { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
+  shimmerBlock: {
+    height: 130, borderRadius: radius.xl,
+    backgroundColor: colors.backgroundSecondary,
+    padding: spacing.md, gap: spacing.sm,
+  },
+  shimmerIcon:      { width: 48, height: 48, borderRadius: radius.lg, backgroundColor: colors.border },
+  shimmerLine:      { width: '70%', height: 12, borderRadius: radius.sm, backgroundColor: colors.border },
+  shimmerLineShort: { width: '40%', height: 10, borderRadius: radius.sm, backgroundColor: colors.border },
+
+  // Grid
   grid: { paddingHorizontal: spacing.md, paddingBottom: 100, paddingTop: spacing.sm },
-  row: { gap: spacing.sm, marginBottom: spacing.sm },
+  row:  { gap: spacing.sm, marginBottom: spacing.sm },
 
   block: {
     backgroundColor: colors.surface,
@@ -166,18 +244,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...shadows.sm,
   },
-  iconBox: {
-    width: 56, height: 56, borderRadius: radius.lg,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  blockLabel: { ...typography.body, color: colors.text, fontWeight: '700', marginBottom: 4 },
-  blockFooter: { flexDirection: 'row', alignItems: 'baseline' },
-  blockCount: { ...typography.h3, fontWeight: '800' },
+  iconBox:         { width: 56, height: 56, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  blockLabel:      { ...typography.body, color: colors.text, fontWeight: '700', marginBottom: 4 },
+  blockFooter:     { flexDirection: 'row', alignItems: 'baseline' },
+  blockCount:      { ...typography.h3, fontWeight: '800' },
   blockCountLabel: { ...typography.caption, color: colors.textSecondary },
-  blockAccent: {
-    position: 'absolute', bottom: 0, left: 0, right: 0, height: 3,
-  },
+  blockAccent:     { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3 },
 
   fab: {
     position: 'absolute', bottom: spacing.xl, right: spacing.lg,

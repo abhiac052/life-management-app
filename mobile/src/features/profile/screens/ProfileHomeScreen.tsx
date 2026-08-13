@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View, StatusBar } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useProfile } from '../hooks/useProfile';
@@ -22,9 +23,10 @@ export function ProfileHomeScreen() {
   const navigation = useNavigation<Nav>();
   const { data: profile, isLoading } = useProfile();
   const { logout } = useLogout();
+  const insets = useSafeAreaInsets();
 
   if (isLoading) return (
-    <View style={[styles.container, { alignItems: 'center', justifyContent: 'center' }]}>
+    <View style={[styles.container, { alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }]}>
       <ActivityIndicator color={colors.primary} />
     </View>
   );
@@ -32,7 +34,7 @@ export function ProfileHomeScreen() {
   const initials = profile?.name?.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() ?? '?';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 

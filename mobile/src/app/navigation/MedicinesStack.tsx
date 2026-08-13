@@ -5,12 +5,13 @@ import { TodayDosesScreen } from '../../features/medicines/screens/TodayDosesScr
 import { MedicineListScreen } from '../../features/medicines/screens/MedicineListScreen';
 import { MedicineDetailScreen } from '../../features/medicines/screens/MedicineDetailScreen';
 import { CreateMedicineScreen, EditMedicineScreen } from '../../features/medicines/screens/MedicineFormScreens';
+import { stackScreenOptions } from './headerOptions';
 
 const Stack = createNativeStackNavigator<MedicinesStackParamList>();
 
 export default function MedicinesStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={({ navigation }) => stackScreenOptions(navigation)}>
       <Stack.Screen name="TodayDoses" component={TodayDosesScreen} options={{ title: "Today's Doses" }} />
       <Stack.Screen name="MedicineList" component={MedicineListScreen} options={{ title: 'Medicines' }} />
       <Stack.Screen name="MedicineDetail" component={MedicineDetailScreen} options={{ title: 'Medicine' }} />

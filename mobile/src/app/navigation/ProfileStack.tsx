@@ -7,13 +7,14 @@ import { ChangePasswordScreen } from '../../features/profile/screens/ChangePassw
 import { NotificationSettingsScreen } from '../../features/profile/screens/NotificationSettingsScreen';
 import { DeleteAccountScreen } from '../../features/profile/screens/DeleteAccountScreen';
 import { HealthProfileScreen } from '../../features/profile/screens/HealthProfileScreen';
+import { stackScreenOptions } from './headerOptions';
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
 export default function ProfileStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} options={{ title: 'Profile' }} />
+    <Stack.Navigator screenOptions={({ navigation }) => stackScreenOptions(navigation)}>
+      <Stack.Screen name="ProfileHome" component={ProfileHomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: 'Notifications' }} />

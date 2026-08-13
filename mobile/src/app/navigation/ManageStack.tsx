@@ -11,13 +11,14 @@ import { VehicleListScreen, VehicleDetailScreen, CreateVehicleScreen, EditVehicl
 import { ReminderListScreen } from '../../features/reminders/screens/ReminderListScreen';
 import { ReminderDetailScreen } from '../../features/reminders/screens/ReminderDetailScreen';
 import { CreateReminderScreen, EditReminderScreen } from '../../features/reminders/screens/ReminderFormScreens';
+import { stackScreenOptions } from './headerOptions';
 
 const Stack = createNativeStackNavigator<ManageStackParamList>();
 
 export default function ManageStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen name="ManageHome" component={ManageHomeScreen} options={{ title: 'Manage' }} />
+    <Stack.Navigator screenOptions={({ navigation }) => stackScreenOptions(navigation)}>
+      <Stack.Screen name="ManageHome" component={ManageHomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ReminderList" component={ReminderListScreen} options={{ title: 'Reminders' }} />
       <Stack.Screen name="ReminderDetail" component={ReminderDetailScreen} options={{ title: 'Reminder' }} />
       <Stack.Screen name="CreateReminder" component={CreateReminderScreen} options={{ title: 'New Reminder' }} />
