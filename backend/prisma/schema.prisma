@@ -1,0 +1,548 @@
+// ============================================================
+// [APP_NAME] Database Schema — Phase 1
+// PostgreSQL + Prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================
+// CORE: Household & User
+// ============================================================
+
+model Household {
+  id        String   @id @default(uuid())
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@map("households")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  householdId  String
+  email        String   @unique
+  passwordHash String
+  name         String
+  phone        String?
+  avatarUrl    String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  household      Household       @relation(fields: [householdId], references: [id])
+  healthProfile  HealthProfile?
+  preference     UserPreference?
+  reminders      Reminder[]
+  documents      Document[]
+  medicines      Medicine[]
+  doctors        Doctor[]
+  appointments   Appointment[]
+  prescriptions  Prescription[]
+  medicalReports MedicalReport[]
+  warranties     Warranty[]
+  vehicles       Vehicle[]
+  deviceTokens   DeviceToken[]
+  notifications  Notification[]
+  refreshTokens  RefreshToken[]
+
+  @@index([householdId])
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tokenHash])
+  @@map("refresh_tokens")
+}
+
+// ============================================================
+// HEALTH: Profile
+// ============================================================
+
+model HealthProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  bloodGroup     String?
+  allergies      String[]
+  heightCm       Float?
+  weightKg       Float?
+  emergencyName  String?
+  emergencyPhone String?
+  medicalNotes   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("health_profiles")
+}
+
+// ============================================================
+// REMINDER ENGINE (Universal)
+// ============================================================
+
+enum ReminderStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  EXPIRED
+}
+
+enum RecurrenceType {
+  ONCE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+  CUSTOM
+}
+
+enum LinkedEntityType {
+  MEDICINE
+  WARRANTY
+  VEHICLE
+  DOCUMENT
+  APPOINTMENT
+  NONE
+}
+
+model Reminder {
+  id               String           @id @default(uuid())
+  userId           String
+  title            String
+  description      String?
+  category         String?
+  dueDate          DateTime
+  recurrenceType   RecurrenceType   @default(ONCE)
+  recurrenceRule   Json?
+  startDate        DateTime
+  endDate          DateTime?
+  notifyBefore     Int[]            @default([0])
+  status           ReminderStatus   @default(ACTIVE)
+  snoozedUntil     DateTime?
+  linkedEntityType LinkedEntityType @default(NONE)
+  linkedEntityId   String?
+  isSystemGenerated Boolean         @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actions ReminderAction[]
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
+  @@index([dueDate, status])
+  @@index([linkedEntityType, linkedEntityId])
+  @@map("reminders")
+}
+
+model ReminderAction {
+  id          String    @id @default(uuid())
+  reminderId  String
+  action      String
+  note        String?
+  snoozedTo   DateTime?
+  performedAt DateTime  @default(now())
+
+  reminder Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  @@index([reminderId])
+  @@map("reminder_actions")
+}
+
+// ============================================================
+// DOCUMENT VAULT
+// ============================================================
+
+enum DocumentCategory {
+  AADHAAR
+  PAN
+  PASSPORT
+  DRIVING_LICENCE
+  INSURANCE
+  PROPERTY
+  EDUCATION
+  MEDICAL
+  VEHICLE
+  OTHER
+}
+
+model Document {
+  id          String           @id @default(uuid())
+  userId      String
+  name        String
+  category    DocumentCategory
+  description String?
+  issueDate   DateTime?
+  expiryDate  DateTime?
+  tags        String[]
+  notes       String?
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  deletedAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, category])
+  @@index([userId, deletedAt])
+  @@index([userId, name])
+  @@map("documents")
+}
+
+// ============================================================
+// MEDICINE
+// ============================================================
+
+enum MedicineForm {
+  TABLET
+  CAPSULE
+  SYRUP
+  INJECTION
+  DROPS
+  INHALER
+  CREAM
+  OTHER
+}
+
+enum MealRelation {
+  BEFORE_FOOD
+  AFTER_FOOD
+  WITH_FOOD
+  NO_PREFERENCE
+}
+
+model Medicine {
+  id             String       @id @default(uuid())
+  userId         String
+  name           String
+  dosage         String
+  form           MedicineForm
+  mealRelation   MealRelation @default(NO_PREFERENCE)
+  instructions   String?
+  notes          String?
+  startDate      DateTime
+  endDate        DateTime?
+  isActive       Boolean      @default(true)
+  prescriptionId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescription Prescription?     @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+  schedules    MedicineSchedule[]
+  stock        MedicineStock?
+
+  @@index([userId, isActive])
+  @@map("medicines")
+}
+
+model MedicineSchedule {
+  id         String   @id @default(uuid())
+  medicineId String
+  time       String
+  label      String?
+  daysOfWeek Int[]
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  medicine Medicine       @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+  doses    MedicineDose[]
+
+  @@index([medicineId])
+  @@map("medicine_schedules")
+}
+
+model MedicineDose {
+  id          String    @id @default(uuid())
+  scheduleId  String
+  userId      String
+  scheduledAt DateTime
+  action      String
+  actionAt    DateTime?
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  schedule MedicineSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  @@index([scheduleId, scheduledAt])
+  @@index([userId, scheduledAt])
+  @@map("medicine_doses")
+}
+
+model MedicineStock {
+  id              String   @id @default(uuid())
+  medicineId      String   @unique
+  currentQty      Int
+  unitsPerDose    Int      @default(1)
+  dosesPerDay     Int      @default(1)
+  refillThreshold Int      @default(7)
+  lastUpdated     DateTime @default(now())
+
+  medicine Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  @@map("medicine_stocks")
+}
+
+// ============================================================
+// PRESCRIPTION & MEDICAL REPORTS
+// ============================================================
+
+model Prescription {
+  id         String   @id @default(uuid())
+  userId     String
+  doctorName String
+  clinicName String?
+  date       DateTime
+  notes      String?
+  fileName   String?
+  filePath   String?
+  fileSize   Int?
+  mimeType   String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicines    Medicine[]
+  appointments Appointment[]
+
+  @@index([userId])
+  @@map("prescriptions")
+}
+
+enum MedicalReportType {
+  BLOOD_TEST
+  XRAY
+  CT_SCAN
+  MRI
+  ULTRASOUND
+  ECG
+  VACCINATION
+  LAB_REPORT
+  OTHER
+}
+
+model MedicalReport {
+  id        String            @id @default(uuid())
+  userId    String
+  title     String
+  type      MedicalReportType
+  date      DateTime
+  doctorLab String?
+  notes     String?
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType  String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([userId, date])
+  @@map("medical_reports")
+}
+
+// ============================================================
+// DOCTOR & APPOINTMENT
+// ============================================================
+
+model Doctor {
+  id             String   @id @default(uuid())
+  userId         String
+  name           String
+  specialization String?
+  hospital       String?
+  phone          String?
+  address        String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([userId])
+  @@map("doctors")
+}
+
+enum AppointmentStatus {
+  UPCOMING
+  COMPLETED
+  CANCELLED
+}
+
+model Appointment {
+  id             String            @id @default(uuid())
+  userId         String
+  doctorId       String?
+  doctorName     String
+  date           DateTime
+  time           String
+  purpose        String?
+  notes          String?
+  status         AppointmentStatus @default(UPCOMING)
+  prescriptionId String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor       Doctor?       @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([userId, date])
+  @@map("appointments")
+}
+
+// ============================================================
+// WARRANTY
+// ============================================================
+
+model Warranty {
+  id              String   @id @default(uuid())
+  userId          String
+  productName     String
+  brand           String?
+  model           String?
+  purchaseDate    DateTime
+  expiryDate      DateTime
+  seller          String?
+  notes           String?
+  invoiceFileName String?
+  invoiceFilePath String?
+  invoiceFileSize Int?
+  invoiceMimeType String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, expiryDate])
+  @@map("warranties")
+}
+
+// ============================================================
+// VEHICLE
+// ============================================================
+
+enum VehicleType {
+  CAR
+  BIKE
+  SCOOTER
+  OTHER
+}
+
+model Vehicle {
+  id              String      @id @default(uuid())
+  userId          String
+  name            String
+  type            VehicleType
+  registrationNo  String?
+  insuranceExpiry DateTime?
+  pucExpiry       DateTime?
+  nextServiceDate DateTime?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("vehicles")
+}
+
+// ============================================================
+// NOTIFICATIONS & DEVICE
+// ============================================================
+
+enum Platform {
+  IOS
+  ANDROID
+}
+
+model DeviceToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  platform  Platform
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ============================================================
+// USER PREFERENCES
+// ============================================================
+
+model UserPreference {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  timezone             String   @default("Asia/Kolkata")
+  notificationsEnabled Boolean  @default(true)
+  medicinePush         Boolean  @default(true)
+  appointmentPush      Boolean  @default(true)
+  reminderPush         Boolean  @default(true)
+  warrantyPush         Boolean  @default(true)
+  vehiclePush          Boolean  @default(true)
+  documentPush         Boolean  @default(true)
+  quietHoursEnabled    Boolean  @default(false)
+  quietHoursStart      String?
+  quietHoursEnd        String?
+  theme                String   @default("system")
+  timeFormat           String   @default("12h")
+  defaultReminderTime  String   @default("09:00")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_preferences")
+}
