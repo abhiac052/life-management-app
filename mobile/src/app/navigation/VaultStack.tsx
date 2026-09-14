@@ -5,19 +5,17 @@ import { VaultHomeScreen } from '../../features/documents/screens/VaultHomeScree
 import { CategoryDocumentsScreen } from '../../features/documents/screens/CategoryDocumentsScreen';
 import { DocumentDetailScreen } from '../../features/documents/screens/DocumentDetailScreen';
 import { CreateDocumentScreen, EditDocumentScreen } from '../../features/documents/screens/DocumentFormScreens';
-import { stackScreenOptions } from './headerOptions';
+import { makeStackScreenOptions } from './headerOptions';
+import { useTheme } from '../../shared/theme/ThemeContext';
 
 const Stack = createNativeStackNavigator<VaultStackParamList>();
 
 export default function VaultStack() {
+  const { colors } = useTheme();
   return (
-    <Stack.Navigator screenOptions={({ navigation }) => stackScreenOptions(navigation)}>
+    <Stack.Navigator screenOptions={({ navigation }) => makeStackScreenOptions(navigation, colors)}>
       <Stack.Screen name="VaultHome" component={VaultHomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen
-        name="CategoryDocuments"
-        component={CategoryDocumentsScreen}
-        options={({ route }) => ({ title: route.params.label })}
-      />
+      <Stack.Screen name="CategoryDocuments" component={CategoryDocumentsScreen} options={({ route }) => ({ title: route.params.label })} />
       <Stack.Screen name="DocumentDetail" component={DocumentDetailScreen} options={{ title: 'Document' }} />
       <Stack.Screen name="CreateDocument" component={CreateDocumentScreen} options={{ title: 'Upload Document' }} />
       <Stack.Screen name="EditDocument" component={EditDocumentScreen} options={{ title: 'Edit Document' }} />

@@ -9,7 +9,8 @@ import MedicinesStack from './MedicinesStack';
 import ManageStack from './ManageStack';
 import HomeStack from './HomeStack';
 import { Icon } from '../../shared/components/Icon';
-import { colors, radius, spacing, typography } from '../../shared/theme';
+import { radius, spacing } from '../../shared/theme';
+import { useTheme } from '../../shared/theme/ThemeContext';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -22,6 +23,7 @@ const TABS: { name: keyof MainTabParamList; label: string; icon: string; activeI
 ];
 
 function TabItem({ tab, focused, onPress }: { tab: typeof TABS[0]; focused: boolean; onPress: () => void }) {
+  const { colors } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const indicatorWidth = useRef(new Animated.Value(0)).current;
 
@@ -41,7 +43,7 @@ function TabItem({ tab, focused, onPress }: { tab: typeof TABS[0]; focused: bool
   return (
     <TouchableOpacity style={styles.tabBtn} onPress={onPress} activeOpacity={0.7}>
       <Animated.View style={[styles.tabInner, { transform: [{ scale }] }]}>
-        <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+        <View style={[styles.iconWrap, focused && { backgroundColor: colors.primaryGlow }]}>
           <Icon
             name={focused ? tab.activeIcon : tab.icon}
             size={20}
@@ -49,7 +51,7 @@ function TabItem({ tab, focused, onPress }: { tab: typeof TABS[0]; focused: bool
           />
         </View>
         <Text
-          style={[styles.tabLabel, focused && styles.tabLabelActive]}
+          style={[styles.tabLabel, { color: focused ? colors.primary : colors.textDisabled }, focused && styles.tabLabelActive]}
           numberOfLines={1}
         >
           {tab.label}
@@ -58,9 +60,8 @@ function TabItem({ tab, focused, onPress }: { tab: typeof TABS[0]; focused: bool
       <Animated.View
         style={[
           styles.indicator,
-          {
-            width: indicatorWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '60%'] }),
-          },
+          { backgroundColor: colors.primary },
+          { width: indicatorWidth.interpolate({ inputRange: [0, 1], outputRange: ['0%', '60%'] }) },
         ]}
       />
     </TouchableOpacity>
@@ -68,8 +69,9 @@ function TabItem({ tab, focused, onPress }: { tab: typeof TABS[0]; focused: bool
 }
 
 function CustomTabBar({ state, navigation }: BottomTabBarProps) {
+  const { colors } = useTheme();
   return (
-    <View style={styles.tabBar}>
+    <View style={[styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }]}>
       {state.routes.map((route, index) => {
         const tab = TABS.find((t) => t.name === route.name)!;
         const focused = state.index === index;
@@ -110,50 +112,16 @@ export default function MainNavigator() {
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
     paddingHorizontal: spacing.xs,
     paddingBottom: Platform.OS === 'ios' ? 20 : spacing.sm,
     paddingTop: spacing.sm,
     height: Platform.OS === 'ios' ? 82 : 64,
   },
-  tabBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 2,
-  },
-  tabInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-  },
-  iconWrap: {
-    width: 36,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.sm,
-  },
-  iconWrapActive: {
-    backgroundColor: colors.primaryGlow,
-  },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: colors.textDisabled,
-    letterSpacing: 0.2,
-  },
-  tabLabelActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  indicator: {
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: radius.full,
-    marginTop: 4,
-    alignSelf: 'center',
-  },
+  tabBtn: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 2 },
+  tabInner: { alignItems: 'center', justifyContent: 'center', gap: 3 },
+  iconWrap: { width: 36, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm },
+  tabLabel: { fontSize: 10, fontWeight: '500', letterSpacing: 0.2 },
+  tabLabelActive: { fontWeight: '700' },
+  indicator: { height: 3, borderRadius: radius.full, marginTop: 4, alignSelf: 'center' },
 });

@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Animated, FlatList, StyleSheet, Text,
-  TouchableOpacity, View, StatusBar, Dimensions,
-} from 'react-native';
+import { Animated, FlatList, StyleSheet, Text, TouchableOpacity, View, StatusBar, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDocuments } from '../hooks/useDocuments';
 import { Icon } from '../../../shared/components/Icon';
-import { colors, spacing, typography, radius, shadows } from '../../../shared/theme';
+import { spacing, typography, radius, shadows } from '../../../shared/theme';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 import type { VaultStackParamList } from '../../../app/navigation/types';
 
 type Nav = NativeStackNavigationProp<VaultStackParamList>;
@@ -28,9 +26,8 @@ const CATEGORIES = [
   { key: 'OTHER',           label: 'Other',     icon: 'file-document-outline',         color: '#8E8E93' },
 ];
 
-function ShimmerBlock({ delay }: { delay: number }) {
+function ShimmerBlock({ delay, colors }: { delay: number; colors: any }) {
   const shimmer = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
@@ -41,47 +38,28 @@ function ShimmerBlock({ delay }: { delay: number }) {
     anim.start();
     return () => anim.stop();
   }, []);
-
   const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.9] });
-
   return (
-    <Animated.View style={[styles.shimmerBlock, { opacity, width: CARD_WIDTH }]}>
-      <View style={styles.shimmerIcon} />
-      <View style={styles.shimmerLine} />
-      <View style={styles.shimmerLineShort} />
+    <Animated.View style={[styles.shimmerBlock, { opacity, width: CARD_WIDTH, backgroundColor: colors.backgroundSecondary }]}>
+      <View style={[styles.shimmerIcon, { backgroundColor: colors.border }]} />
+      <View style={[styles.shimmerLine, { backgroundColor: colors.border }]} />
+      <View style={[styles.shimmerLineShort, { backgroundColor: colors.border }]} />
     </Animated.View>
   );
 }
 
-function CategoryBlock({ cat, count, index, onPress }: {
-  cat: typeof CATEGORIES[0];
-  count: number;
-  index: number;
-  onPress: () => void;
+function CategoryBlock({ cat, count, index, onPress, colors }: {
+  cat: typeof CATEGORIES[0]; count: number; index: number; onPress: () => void; colors: any;
 }) {
   const anim  = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
-
   useEffect(() => {
-    Animated.timing(anim, {
-      toValue: 1,
-      duration: 600,
-      delay: index * 150,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(anim, { toValue: 1, duration: 400, delay: index * 50, useNativeDriver: true }).start();
   }, []);
-
   return (
-    <Animated.View style={{
-      opacity: anim,
-      transform: [
-        { scale },
-        { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) },
-      ],
-      width: CARD_WIDTH,
-    }}>
+    <Animated.View style={{ opacity: anim, transform: [{ scale }, { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }], width: CARD_WIDTH }}>
       <TouchableOpacity
-        style={styles.block}
+        style={[styles.block, { backgroundColor: colors.surface }]}
         onPress={onPress}
         onPressIn={() => Animated.spring(scale, { toValue: 0.95, tension: 200, friction: 10, useNativeDriver: true }).start()}
         onPressOut={() => Animated.spring(scale, { toValue: 1, tension: 200, friction: 10, useNativeDriver: true }).start()}
@@ -90,10 +68,10 @@ function CategoryBlock({ cat, count, index, onPress }: {
         <View style={[styles.iconBox, { backgroundColor: cat.color + '18' }]}>
           <Icon name={cat.icon} size={28} color={cat.color} />
         </View>
-        <Text style={styles.blockLabel} numberOfLines={1}>{cat.label}</Text>
+        <Text style={[styles.blockLabel, { color: colors.text }]} numberOfLines={1}>{cat.label}</Text>
         <View style={styles.blockFooter}>
           <Text style={[styles.blockCount, { color: cat.color }]}>{count}</Text>
-          <Text style={styles.blockCountLabel}> {count === 1 ? 'doc' : 'docs'}</Text>
+          <Text style={[styles.blockCountLabel, { color: colors.textSecondary }]}> {count === 1 ? 'doc' : 'docs'}</Text>
         </View>
         <View style={[styles.blockAccent, { backgroundColor: cat.color }]} />
       </TouchableOpacity>
@@ -102,29 +80,22 @@ function CategoryBlock({ cat, count, index, onPress }: {
 }
 
 export function VaultHomeScreen() {
-  const navigation  = useNavigation<Nav>();
+  const navigation = useNavigation<Nav>();
   const { data, isLoading } = useDocuments({});
+  const { colors } = useTheme();
   const [ready, setReady] = useState(false);
-
   const headerAnim  = useRef(new Animated.Value(0)).current;
   const contentAnim = useRef(new Animated.Value(0)).current;
 
-  // Header slides in immediately
   useEffect(() => {
-    Animated.timing(headerAnim, {
-      toValue: 1, duration: 350, useNativeDriver: true,
-    }).start();
+    Animated.timing(headerAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
   }, []);
 
-  // When data arrives, crossfade skeleton → grid
   useEffect(() => {
     if (!isLoading) {
-      // Small delay so skeleton doesn't flash away instantly
       setTimeout(() => {
         setReady(true);
-        Animated.timing(contentAnim, {
-          toValue: 1, duration: 350, useNativeDriver: true,
-        }).start();
+        Animated.timing(contentAnim, { toValue: 1, duration: 350, useNativeDriver: true }).start();
       }, 150);
     }
   }, [isLoading]);
@@ -132,20 +103,14 @@ export function VaultHomeScreen() {
   const docs       = Array.isArray(data?.data) ? data!.data : [];
   const totalCount = docs.length;
   const countFor   = (key: string) => docs.filter(d => d.category === key).length;
-
-  // Fade out skeleton as grid fades in
   const skeletonOpacity = contentAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.headerBg} />
+      <View style={[styles.headerBg, { backgroundColor: colors.primary }]} />
 
-      {/* Header */}
-      <Animated.View style={[styles.header, {
-        opacity: headerAnim,
-        transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
-      }]}>
+      <Animated.View style={[styles.header, { opacity: headerAnim, transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }] }]}>
         <View>
           <Text style={styles.headerLabel}>Secure Storage</Text>
           <Text style={styles.headerTitle}>My Vault</Text>
@@ -156,19 +121,17 @@ export function VaultHomeScreen() {
         </View>
       </Animated.View>
 
-      {/* Skeleton — fades out when ready */}
       {!ready && (
         <Animated.View style={[styles.skeletonWrap, { opacity: skeletonOpacity }]}>
           {[0, 1, 2, 3, 4, 5].map(i => (
             <View key={i} style={styles.skeletonRow}>
-              <ShimmerBlock delay={i * 80} />
-              <ShimmerBlock delay={i * 80 + 40} />
+              <ShimmerBlock delay={i * 80} colors={colors} />
+              <ShimmerBlock delay={i * 80 + 40} colors={colors} />
             </View>
           ))}
         </Animated.View>
       )}
 
-      {/* Real grid — fades in when ready */}
       {ready && (
         <Animated.View style={{ flex: 1, opacity: contentAnim }}>
           <FlatList
@@ -180,9 +143,7 @@ export function VaultHomeScreen() {
             showsVerticalScrollIndicator={false}
             renderItem={({ item, index }) => (
               <CategoryBlock
-                cat={item}
-                count={countFor(item.key)}
-                index={index}
+                cat={item} count={countFor(item.key)} index={index} colors={colors}
                 onPress={() => navigation.navigate('CategoryDocuments', { category: item.key, label: item.label })}
               />
             )}
@@ -190,73 +151,36 @@ export function VaultHomeScreen() {
         </Animated.View>
       )}
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('CreateDocument')}
-        activeOpacity={0.85}
-      >
-        <Icon name="plus" size={26} color={colors.white} />
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={() => navigation.navigate('CreateDocument')} activeOpacity={0.85}>
+        <Icon name="plus" size={26} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-
-  headerBg: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: 120, backgroundColor: colors.primary,
-  },
-
-  header: {
-    flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.lg + spacing.sm,
-    paddingBottom: spacing.md,
-  },
+  container: { flex: 1 },
+  headerBg: { position: 'absolute', top: 0, left: 0, right: 0, height: 120 },
+  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.lg + spacing.sm, paddingBottom: spacing.md },
   headerLabel:    { ...typography.label, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: spacing.xs },
-  headerTitle:    { ...typography.h2, color: colors.white },
+  headerTitle:    { ...typography.h2, color: '#FFFFFF' },
   headerCount:    { alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.xs },
-  headerCountNum: { ...typography.h3, color: colors.white, fontWeight: '800' },
+  headerCountNum: { ...typography.h3, color: '#FFFFFF', fontWeight: '800' },
   headerCountSub: { ...typography.caption, color: 'rgba(255,255,255,0.7)' },
-
-  // Shimmer skeleton
   skeletonWrap: { paddingHorizontal: spacing.md, paddingTop: spacing.sm },
   skeletonRow:  { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
-  shimmerBlock: {
-    height: 130, borderRadius: radius.xl,
-    backgroundColor: colors.backgroundSecondary,
-    padding: spacing.md, gap: spacing.sm,
-  },
-  shimmerIcon:      { width: 48, height: 48, borderRadius: radius.lg, backgroundColor: colors.border },
-  shimmerLine:      { width: '70%', height: 12, borderRadius: radius.sm, backgroundColor: colors.border },
-  shimmerLineShort: { width: '40%', height: 10, borderRadius: radius.sm, backgroundColor: colors.border },
-
-  // Grid
+  shimmerBlock: { height: 130, borderRadius: radius.xl, padding: spacing.md, gap: spacing.sm },
+  shimmerIcon:      { width: 48, height: 48, borderRadius: radius.lg },
+  shimmerLine:      { width: '70%', height: 12, borderRadius: radius.sm },
+  shimmerLineShort: { width: '40%', height: 10, borderRadius: radius.sm },
   grid: { paddingHorizontal: spacing.md, paddingBottom: 100, paddingTop: spacing.sm },
   row:  { gap: spacing.sm, marginBottom: spacing.sm },
-
-  block: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    padding: spacing.md,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  iconBox:         { width: 56, height: 56, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
-  blockLabel:      { ...typography.body, color: colors.text, fontWeight: '700', marginBottom: 4 },
+  block: { borderRadius: radius.xl, padding: spacing.md, overflow: 'hidden', ...shadows.sm },
+  iconBox: { width: 56, height: 56, borderRadius: radius.lg, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
+  blockLabel:      { ...typography.body, fontWeight: '700', marginBottom: 4 },
   blockFooter:     { flexDirection: 'row', alignItems: 'baseline' },
   blockCount:      { ...typography.h3, fontWeight: '800' },
-  blockCountLabel: { ...typography.caption, color: colors.textSecondary },
+  blockCountLabel: { ...typography.caption },
   blockAccent:     { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3 },
-
-  fab: {
-    position: 'absolute', bottom: spacing.xl, right: spacing.lg,
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: colors.primary, shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35, shadowRadius: 12, elevation: 8,
-  },
+  fab: { position: 'absolute', bottom: spacing.xl, right: spacing.lg, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#E8441A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12, elevation: 8 },
 });

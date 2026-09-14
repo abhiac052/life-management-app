@@ -1,10 +1,11 @@
 import React from 'react';
 import { Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
-import { colors, spacing } from '../../shared/theme';
+import { spacing } from '../../shared/theme';
 import { Icon } from '../../shared/components/Icon';
+import type { AppColors } from '../../shared/theme';
 
-export const stackScreenOptions = (navigation: any): NativeStackNavigationOptions => ({
+export const makeStackScreenOptions = (navigation: any, colors: AppColors): NativeStackNavigationOptions => ({
   headerStyle: { backgroundColor: colors.surface },
   headerTitleStyle: {
     fontFamily: 'Poppins-SemiBold',
@@ -19,7 +20,7 @@ export const stackScreenOptions = (navigation: any): NativeStackNavigationOption
     canGoBack ? (
       <TouchableOpacity
         onPress={() => navigation.goBack()}
-        style={styles.backBtn}
+        style={[styles.backBtn, { backgroundColor: colors.primaryGlow }]}
         activeOpacity={0.7}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
@@ -28,14 +29,17 @@ export const stackScreenOptions = (navigation: any): NativeStackNavigationOption
     ) : null,
 });
 
+// Keep old export name working for stacks that haven't migrated
+export const stackScreenOptions = (navigation: any): NativeStackNavigationOptions =>
+  makeStackScreenOptions(navigation, {
+    surface: '#FFFFFF', text: '#1A1A2E', primary: '#E8441A',
+    primaryGlow: 'rgba(232,68,26,0.10)', background: '#F7F7F8',
+  } as AppColors);
+
 const styles = StyleSheet.create({
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryGlow,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 18,
+    alignItems: 'center', justifyContent: 'center',
     marginLeft: Platform.OS === 'ios' ? 0 : spacing.xs,
   },
 });

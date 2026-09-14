@@ -6,6 +6,7 @@ import { useDashboard } from '../hooks/useDashboard';
 import { LoadingSkeleton } from '../../../shared/components/Card';
 import { Icon } from '../../../shared/components/Icon';
 import { colors, spacing, typography, radius, shadows } from '../../../shared/theme';
+import { useTheme } from '../../../shared/theme/ThemeContext';
 
 function daysUntil(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -43,14 +44,15 @@ function AnimatedCard({ children, index }: { children: React.ReactNode; index: n
 function SectionCard({ icon, iconColor, title, children, index }: {
   icon: string; iconColor: string; title: string; children: React.ReactNode; index: number;
 }) {
+  const { colors } = useTheme();
   return (
     <AnimatedCard index={index}>
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.surface }]}>
         <View style={styles.cardHeader}>
           <View style={[styles.cardIconBadge, { backgroundColor: iconColor + '18' }]}>
             <Icon name={icon} size={16} color={iconColor} />
           </View>
-          <Text style={styles.cardTitle}>{title}</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
         </View>
         {children}
       </View>
@@ -60,6 +62,7 @@ function SectionCard({ icon, iconColor, title, children, index }: {
 
 export function DashboardScreen() {
   const { data, isLoading, refetch, isRefetching } = useDashboard();
+  const { colors } = useTheme();
   const headerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -75,9 +78,9 @@ export function DashboardScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        <View style={styles.headerBg} />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colors.statusBar} />
+        <View style={[styles.headerBg, { backgroundColor: colors.primary }]} />
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.headerSection}>
             <LoadingSkeleton width={120} height={12} style={{ borderRadius: 6, marginBottom: 8 }} />
@@ -99,9 +102,9 @@ export function DashboardScreen() {
   let cardIndex = 0;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.headerBg} />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} />
+      <View style={[styles.headerBg, { backgroundColor: colors.primary }]} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -113,35 +116,35 @@ export function DashboardScreen() {
           opacity: headerAnim,
           transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
         }]}>
-          <Text style={styles.greetingLabel}>{greeting()} 👋</Text>
-          <Text style={styles.greetingTitle}>Your Overview</Text>
+          <Text style={[styles.greetingLabel, { color: 'rgba(255,255,255,0.75)' }]}>{greeting()} 👋</Text>
+          <Text style={[styles.greetingTitle, { color: colors.white }]}>Your Overview</Text>
         </Animated.View>
 
         {/* Overdue banner */}
         {reminders.overdue > 0 && (
           <AnimatedCard index={0}>
-            <View style={styles.alertBanner}>
+            <View style={[styles.alertBanner, { backgroundColor: colors.primaryDark }]}>
               <Icon name="alert-circle" size={18} color={colors.white} />
-              <Text style={styles.alertText}>{reminders.overdue} overdue reminder{reminders.overdue > 1 ? 's' : ''}</Text>
+              <Text style={[styles.alertText, { color: colors.white }]}>{reminders.overdue} overdue reminder{reminders.overdue > 1 ? 's' : ''}</Text>
             </View>
           </AnimatedCard>
         )}
 
         {/* Doses */}
         <AnimatedCard index={cardIndex++}>
-          <View style={styles.dosesCard}>
+          <View style={[styles.dosesCard, { backgroundColor: colors.surface }]}>
             <View style={styles.dosesHeader}>
               <View style={[styles.cardIconBadge, { backgroundColor: colors.primaryGlow }]}>
                 <Icon name="pill" size={16} color={colors.primary} />
               </View>
-              <Text style={styles.cardTitle}>Today's Doses</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Today's Doses</Text>
               {doses.pending > 0 && (
                 <View style={styles.pendingBadge}>
                   <Text style={styles.pendingBadgeText}>{doses.pending} pending</Text>
                 </View>
               )}
             </View>
-            <View style={styles.doseStatsRow}>
+            <View style={[styles.doseStatsRow, { backgroundColor: colors.backgroundSecondary }]}>
               <DoseStat value={doses.total}   label="Total"   color={colors.text} />
               <View style={styles.doseStatDivider} />
               <DoseStat value={doses.taken}   label="Taken"   color={colors.success} />
@@ -163,10 +166,10 @@ export function DashboardScreen() {
         {reminders.upcoming.length > 0 && (
           <SectionCard icon="bell-ring-outline" iconColor={colors.primary} title="Upcoming Reminders" index={cardIndex++}>
             {reminders.upcoming.map((r, i) => (
-              <View key={r.id} style={[styles.listRow, i > 0 && styles.listRowBorder]}>
+              <View key={r.id} style={[styles.listRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.divider }]}>
                 <View style={styles.listRowLeft}>
-                  <Text style={styles.listRowTitle} numberOfLines={1}>{r.title}</Text>
-                  <Text style={styles.listRowSub} numberOfLines={1}>
+                  <Text style={[styles.listRowTitle, { color: colors.text }]} numberOfLines={1}>{r.title}</Text>
+                  <Text style={[styles.listRowSub, { color: colors.textSecondary }]} numberOfLines={1}>
                     {new Date(r.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     {' · '}
                     {new Date(r.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
